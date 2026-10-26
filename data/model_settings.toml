@@ -1,0 +1,24 @@
+# =====================================================================
+#  RECOMMENDER SETTINGS  (for the Data Expert)
+# ---------------------------------------------------------------------
+#  These "weights" decide how much each feature matters when CineMatch
+#  compares two movies. Higher number = more important.
+#  Change a number, double-click UPDATE_WEBSITE.bat, then refresh the
+#  website to see how the results change. Great for the report's
+#  "Testing" section!
+# =====================================================================
+
+[weights]
+genres   = 3.0   # shared genres (Drama, Comedy, Sci-Fi ...)
+mood     = 2.0   # shared moods (Feel-good, Suspenseful ...)
+language = 1.5   # same language
+director = 1.5   # same director
+cast     = 1.0   # shared lead actors
+rating   = 0.5   # similar audience rating
+
+[clustering]
+families = 6     # how many "movie families" Orange groups the films into
+
+[display]
+default_results = 6      # how many recommendations to show
+min_rating_default = 6.0 # starting minimum rating filter

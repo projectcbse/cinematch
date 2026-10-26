@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>CineMatch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* =====================================================================
+   DESIGNER'S STYLE SHEET
+   Layout: a cinema marquee bar on top, the hero IS the movie picker,
+   results print like admission tickets. Change colours in the tokens.
+   ===================================================================== */
+:root {
+  /* Dark blue theme: every colour on the site comes from these tokens */
+  --bg: #070D1A;          /* midnight navy */
+  --surface: #0E1A2E;     /* card navy */
+  --surface-2: #16263F;
+  --fg: #E6EDF8;
+  --muted: #8FA3C2;
+  --line: #20324F;
+  --accent: #8AB8FF;      /* moonlight blue */
+  --accent-ink: #06101F;
+  --gold: #F2C46D;        /* star ratings */
+  --velvet: #E8798B;
+  --good: #6FD3A5;
+  --glow-1: #15305C;      /* background glows */
+  --glow-2: #0F2142;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --radius: 14px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; color: var(--fg);
+  background:
+    radial-gradient(1100px 520px at 85% -8%, var(--glow-1) 0%, transparent 62%),
+    radial-gradient(900px 600px at -10% 45%, var(--glow-2) 0%, transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 800; line-height: 1; letter-spacing: .005em; text-wrap: balance; margin: 0; text-transform: uppercase; }
+h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); }
+h3 { font-size: 1.35rem; }
+p { margin: 0; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.eyebrow { font-family: var(--font-mono); font-size: .74rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Marquee header ---------- */
+header.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+header.bar .wrap { display: flex; align-items: center; gap: 20px; padding-block: 10px; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 900; font-size: 1.7rem; text-transform: uppercase; color: var(--fg); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.bulbs { display: inline-grid; grid-template-columns: repeat(3, 6px); gap: 3px; }
+.bulbs i { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+.bulbs i:nth-child(even) { opacity: .45; }
+nav { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+nav a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: .92rem; padding: 7px 12px; border-radius: 999px; }
+nav a:hover { color: var(--fg); background: var(--surface-2); }
+nav a[aria-current="page"] { color: var(--accent-ink); background: var(--accent); }
+
+main { padding-block: 32px 24px; }
+.view { display: grid; gap: 40px; }
+.section { display: grid; gap: 18px; }
+.section-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* ---------- Hero / picker ---------- */
+.hero { display: grid; gap: 22px; padding: clamp(22px, 4vw, 40px); border-radius: 22px; background: linear-gradient(160deg, #10223F 0%, #0B1629 58%, #0A1324 100%); border: 1px solid var(--line); position: relative; overflow: hidden; }
+/* starfield */
+.hero::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .75;
+  background-image:
+    radial-gradient(1.6px 1.6px at 8% 14%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 22% 8%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 38% 20%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1px 1px at 52% 6%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 61% 16%, #F2C46D 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 74% 9%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 90% 22%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1px 1px at 46% 34%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 15% 72%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 33% 88%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1px 1px at 68% 80%, #DCE8FF 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 94% 66%, #F2C46D 50%, transparent 51%);
+}
+.hero::after { content: ""; position: absolute; right: -80px; top: -80px; width: 340px; height: 340px; border-radius: 50%; background: var(--accent); opacity: .14; filter: blur(40px); pointer-events: none; }
+.hero-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 24px; align-items: center; position: relative; z-index: 1; }
+.hero-copy { display: grid; gap: 16px; min-width: 0; }
+.hero-art { display: block; width: 100%; max-width: 100%; height: auto; }
+@media (max-width: 820px) { .hero-top { grid-template-columns: 1fr; } .hero-art { max-width: 300px; order: -1; } }
+
+/* cinema-hall banner at the top of the inner pages */
+.banner { border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.banner svg { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 320; min-height: 150px; max-width: 100%; }
+.hero h1 { font-size: clamp(2.4rem, 6.5vw, 4.4rem); max-width: 20ch; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lede { color: var(--muted); max-width: 60ch; font-size: 1.05rem; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end; position: relative; z-index: 1; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field.grow { flex: 1 1 260px; }
+label, .label { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+select, input[type="search"], input[type="text"] {
+  font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%;
+}
+.switch { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: .92rem; color: var(--fg); text-transform: none; letter-spacing: 0; font-weight: 500; cursor: pointer; }
+.switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: var(--font-mono); font-size: .82rem; color: var(--muted); position: relative; z-index: 1; }
+.stats b { color: var(--fg); font-weight: 500; }
+
+/* ---------- Ticket card ---------- */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+.ticket { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; min-width: 0; transition: transform .18s ease, border-color .18s ease; }
+.ticket:hover { transform: translateY(-3px); border-color: var(--accent); }
+.poster { height: 160px; position: relative; background-color: var(--surface-2); background-size: cover; background-position: center; }
+.poster .stamp { position: absolute; top: 12px; right: 12px; font-family: var(--font-mono); font-size: .74rem; padding: 4px 9px; border-radius: 999px; background: rgba(6,12,24,.75); color: #DCE8FF; border: 1px solid rgba(138,184,255,.35); }
+.tear { height: 14px; position: relative; border-top: 2px dashed var(--line); margin-top: 7px; }
+.tear::before, .tear::after { content: ""; position: absolute; top: -9px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); }
+.tear::before { left: -9px; } .tear::after { right: -9px; }
+.ticket-body { padding: 4px 16px 16px; display: grid; gap: 8px; align-content: start; }
+.ticket h3 { font-size: 1.4rem; }
+.meta { font-family: var(--font-mono); font-size: .76rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.meta .star { color: var(--gold); }
+.overview { font-size: .9rem; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: .74rem; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--fg); }
+.chip.why { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
+.vote { display: flex; gap: 8px; margin-top: 4px; }
+.vote button { flex: 1; font: inherit; font-size: .84rem; font-weight: 600; padding: 8px; min-height: 38px; border-radius: 9px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.vote button:hover { background: var(--surface-2); }
+.vote button[aria-pressed="true"].up { background: var(--good); border-color: var(--good); color: var(--bg); }
+.vote button[aria-pressed="true"].down { background: var(--velvet); border-color: var(--velvet); color: var(--bg); }
+
+.empty { padding: 28px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--muted); text-align: center; }
+.callout { padding: 16px 18px; border-radius: var(--radius); background: var(--surface-2); color: var(--fg); max-width: 75ch; }
+.howto { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.step { display: grid; gap: 6px; padding-top: 14px; border-top: 2px solid var(--accent); }
+.step .n { font-family: var(--font-mono); font-size: .78rem; color: var(--accent); }
+
+/* ---------- Mood pills ---------- */
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { font: inherit; font-size: .88rem; padding: 7px 14px; min-height: 38px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; }
+.pill[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+/* ---------- Insights ---------- */
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 110px 1fr 36px; gap: 10px; align-items: center; font-size: .86rem; }
+.bar-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { height: 12px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 6px; }
+.bar-row .mono { text-align: right; color: var(--muted); font-size: .8rem; }
+.scroll { overflow-x: auto; }
+.heat { display: grid; gap: 2px; font-size: .72rem; min-width: 560px; }
+.heat .cell { aspect-ratio: 1; display: grid; place-items: center; border-radius: 3px; font-family: var(--font-mono); font-size: .66rem; color: var(--fg); }
+.heat .rowlabel { display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.heat .collabel { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; color: var(--muted); padding-top: 4px; max-height: 120px; overflow: hidden; text-overflow: ellipsis; }
+.families { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.family { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 8px; align-content: start; }
+.family .count { font-family: var(--font-mono); font-size: .76rem; color: var(--muted); }
+.family button.link { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; font-weight: 600; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+td.num { font-family: var(--font-mono); text-align: right; }
+.btn { font: inherit; font-weight: 600; font-size: .9rem; padding: 10px 16px; min-height: 42px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+textarea.out { width: 100%; min-height: 120px; font-family: var(--font-mono); font-size: .78rem; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+
+/* ---------- About ---------- */
+.prose { display: grid; gap: 12px; max-width: 70ch; }
+.prose ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.sdgs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.sdg { padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); display: grid; gap: 6px; }
+.sdg b { font-family: var(--font-display); font-size: 1.35rem; text-transform: uppercase; color: var(--accent); font-weight: 800; }
+.team { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.member { padding: 14px; border-radius: var(--radius); border: 1px solid var(--line); display: grid; gap: 2px; }
+.member b { font-weight: 700; }
+details { border-bottom: 1px solid var(--line); padding-block: 12px; }
+summary { cursor: pointer; font-weight: 600; }
+details p { margin-top: 8px; color: var(--muted); }
+.formula { font-family: var(--font-mono); padding: 12px 14px; background: var(--surface-2); border-radius: 10px; overflow-x: auto; }
+
+footer { border-top: 1px solid var(--line); margin-top: 40px; }
+footer .wrap { padding-block: 20px 28px; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .8rem; color: var(--muted); }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: .88rem; font-weight: 600; z-index: 20; }
+
+@media (max-width: 560px) {
+  header.bar .wrap { gap: 8px; }
+  nav { margin-left: 0; }
+  nav a { padding: 6px 10px; font-size: .86rem; }
+  .bar-row { grid-template-columns: 84px 1fr 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .ticket { transition: none; } .ticket:hover { transform: none; } }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#discover"><span class="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span id="brandName">CineMatch</span></a>
+    <nav aria-label="Main">
+      <a href="#discover" data-view="discover">Discover</a>
+      <a href="#moods" data-view="moods">Mood finder</a>
+      <a href="#library" data-view="library">Library</a>
+      <a href="#insights" data-view="insights">How the AI works</a>
+      <a href="#about" data-view="about">About</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ================= DISCOVER ================= -->
+  <section class="view" id="view-discover">
+    <div class="hero">
+      <div class="hero-top">
+        <div class="hero-copy">
+          <div class="eyebrow" id="heroEyebrow"></div>
+          <h1>Loved a film? <em>Here's what to watch next.</em></h1>
+          <p class="lede" id="heroLede"></p>
+        </div>
+        <!-- Hero illustration: a film projector casting light (drawn in SVG, no image file needed) -->
+        <svg class="hero-art" viewBox="0 0 360 270" role="img" aria-label="Illustration of a film projector casting a beam of light">
+          <defs>
+            <linearGradient id="heroBeam" x1="1" y1="0" x2="0" y2="0">
+              <stop offset="0" stop-color="#DCE8FF" stop-opacity=".55"/>
+              <stop offset="1" stop-color="#8AB8FF" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="heroLens">
+              <stop offset="0" stop-color="#FFFFFF"/>
+              <stop offset="1" stop-color="#8AB8FF" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <polygon points="248,160 0,62 0,262 248,172" fill="url(#heroBeam)"/>
+          <g fill="#DCE8FF">
+            <circle cx="62" cy="128" r="1.6" opacity=".8"/><circle cx="118" cy="150" r="1.2" opacity=".7"/>
+            <circle cx="172" cy="158" r="1.7" opacity=".8"/><circle cx="34" cy="200" r="1.1" opacity=".6"/>
+            <circle cx="96" cy="208" r="1.4" opacity=".7"/><circle cx="150" cy="182" r="1" opacity=".6"/>
+          </g>
+          <path d="M150 18 L152 24 L158 26 L152 28 L150 34 L148 28 L142 26 L148 24 Z" fill="#F2C46D"/>
+          <path d="M60 24 L61.5 28.5 L66 30 L61.5 31.5 L60 36 L58.5 31.5 L54 30 L58.5 28.5 Z" fill="#DCE8FF"/>
+          <path d="M342 20 L343.2 23.8 L347 25 L343.2 26.2 L342 30 L340.8 26.2 L337 25 L340.8 23.8 Z" fill="#F2C46D"/>
+          <path d="M250 44 Q 300 22 342 90" fill="none" stroke="#8AB8FF" stroke-width="3" opacity=".5"/>
+          <line x1="266" y1="120" x2="280" y2="138" stroke="#2C4774" stroke-width="5" stroke-linecap="round"/>
+          <line x1="326" y1="130" x2="326" y2="138" stroke="#2C4774" stroke-width="5" stroke-linecap="round"/>
+          <g>
+            <circle cx="266" cy="84" r="36" fill="#0E1A2E" stroke="#8AB8FF" stroke-width="4"/>
+            <circle cx="266" cy="64" r="7" fill="#070D1A"/><circle cx="285" cy="77.8" r="7" fill="#070D1A"/>
+            <circle cx="277.8" cy="100.2" r="7" fill="#070D1A"/><circle cx="254.2" cy="100.2" r="7" fill="#070D1A"/>
+            <circle cx="247" cy="77.8" r="7" fill="#070D1A"/><circle cx="266" cy="84" r="5" fill="#F2C46D"/>
+          </g>
+          <g>
+            <circle cx="326" cy="106" r="24" fill="#0E1A2E" stroke="#8AB8FF" stroke-width="4"/>
+            <circle cx="326" cy="93" r="4.5" fill="#070D1A"/><circle cx="338.4" cy="102" r="4.5" fill="#070D1A"/>
+            <circle cx="333.6" cy="116.5" r="4.5" fill="#070D1A"/><circle cx="318.4" cy="116.5" r="4.5" fill="#070D1A"/>
+            <circle cx="313.6" cy="102" r="4.5" fill="#070D1A"/><circle cx="326" cy="106" r="3.5" fill="#F2C46D"/>
+          </g>
+          <rect x="248" y="138" width="100" height="58" rx="12" fill="#152848" stroke="#2C4774" stroke-width="2"/>
+          <rect x="262" y="152" width="40" height="6" rx="3" fill="#2C4774"/>
+          <rect x="262" y="166" width="26" height="6" rx="3" fill="#2C4774"/>
+          <circle cx="320" cy="167" r="9" fill="#0E1A2E" stroke="#2C4774" stroke-width="2"/>
+          <circle cx="248" cy="166" r="24" fill="url(#heroLens)"/>
+          <circle cx="248" cy="166" r="9" fill="#EAF2FF"/>
+          <path d="M270 196 L258 252 M326 196 L338 252" stroke="#2C4774" stroke-width="5" stroke-linecap="round"/>
+          <line x1="240" y1="254" x2="356" y2="254" stroke="#20324F" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="controls">
+        <div class="field grow">
+          <label for="seed">I enjoyed</label>
+          <select id="seed"></select>
+        </div>
+        <div class="field">
+          <label for="minRating">Minimum rating</label>
+          <select id="minRating"></select>
+        </div>
+        <div class="field">
+          <label for="count">Show</label>
+          <select id="count"><option>3</option><option>6</option><option>9</option><option>12</option></select>
+        </div>
+        <label class="switch" for="anyLang"><input type="checkbox" id="anyLang"> Any language</label>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <div><div class="eyebrow">Recommended by Orange</div><h2 id="recTitle">Because you liked</h2></div>
+        <p class="muted" style="max-width:46ch">Match % is the cosine similarity between the two films' features. Tick marks show what they share.</p>
+      </div>
+      <div class="grid" id="recGrid"></div>
+    </div>
+
+    <div class="section">
+      <h2>How CineMatch picks</h2>
+      <div class="howto">
+        <div class="step"><span class="n">STEP 1</span><b>You choose a film</b><p class="muted">Any title from our library of hand-checked movies.</p></div>
+        <div class="step"><span class="n">STEP 2</span><b>Orange compares features</b><p class="muted">Genre, mood, language, director, cast and rating become numbers. Orange measures the cosine similarity between every pair.</p></div>
+        <div class="step"><span class="n">STEP 3</span><b>You get reasons, not guesses</b><p class="muted">Each pick shows its match score and exactly what it shares with your film.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOOD FINDER ================= -->
+  <section class="view" id="view-moods" hidden>
+    <div class="banner" id="moodBanner"></div>
+    <div class="section">
+      <div class="eyebrow">Mood finder</div>
+      <h2>What are you in the mood for?</h2>
+      <p class="muted" style="max-width:60ch">Tap moods, genres and languages. Films that match more of your picks rank higher, then by rating.</p>
+    </div>
+    <div class="section"><span class="label">Mood</span><div class="pills" id="pillMood"></div></div>
+    <div class="section"><span class="label">Genre</span><div class="pills" id="pillGenre"></div></div>
+    <div class="section"><span class="label">Language</span><div class="pills" id="pillLang"></div></div>
+    <div class="section">
+      <div class="section-head"><h2 id="moodTitle">Your picks</h2><button class="btn ghost" id="moodClear" type="button">Clear all</button></div>
+      <div class="grid" id="moodGrid"></div>
+    </div>
+  </section>
+
+  <!-- ================= LIBRARY ================= -->
+  <section class="view" id="view-library" hidden>
+    <div class="banner" id="libBanner"></div>
+    <div class="section">
+      <div class="eyebrow">The library</div>
+      <h2>Every film in CineMatch</h2>
+    </div>
+    <div class="controls">
+      <div class="field grow"><label for="q">Search</label><input type="search" id="q" placeholder="Title, director or actor"></div>
+      <div class="field"><label for="fGenre">Genre</label><select id="fGenre"></select></div>
+      <div class="field"><label for="fLang">Language</label><select id="fLang"></select></div>
+      <div class="field"><label for="fFamily">Movie family</label><select id="fFamily"></select></div>
+      <div class="field"><label for="fSort">Sort</label>
+        <select id="fSort"><option value="rating">Rating, high to low</option><option value="new">Newest first</option><option value="old">Oldest first</option><option value="az">Title A–Z</option></select></div>
+    </div>
+    <p class="muted mono" id="libCount"></p>
+    <div class="grid" id="libGrid"></div>
+  </section>
+
+  <!-- ================= INSIGHTS ================= -->
+  <section class="view" id="view-insights" hidden>
+    <div class="section">
+      <div class="eyebrow">Inside the model</div>
+      <h2>How the AI works</h2>
+      <p class="muted" id="engineLine" style="max-width:70ch"></p>
+    </div>
+
+    <div class="section">
+      <h3>1. Every film becomes a vector</h3>
+      <p class="muted" style="max-width:70ch">Each feature is a column: 1 if the film has it, 0 if not, multiplied by its weight. Orange's <span class="mono">Cosine</span> distance then measures the angle between two films' vectors.</p>
+      <div class="formula">similarity(A, B) = (A · B) / (|A| × |B|)   →   100% = identical, 0% = nothing shared</div>
+      <div class="panel"><span class="label">Feature weights (data/model_settings.toml)</span><div class="bars" id="weightBars"></div></div>
+    </div>
+
+    <div class="section">
+      <h3>2. Similarity map</h3>
+      <p class="muted">Brighter squares mean more similar films. Hover or tap a square to read it.</p>
+      <div class="field" style="max-width:320px"><label for="heatSet">Compare</label><select id="heatSet"></select></div>
+      <div class="panel scroll"><div class="heat" id="heat"></div></div>
+    </div>
+
+    <div class="section">
+      <h3>3. Movie families (Orange hierarchical clustering)</h3>
+      <p class="muted" style="max-width:70ch">Orange grouped films whose vectors sit close together. Each family is named after its most common mood and genres.</p>
+      <div class="families" id="families"></div>
+    </div>
+
+    <div class="section">
+      <h3>4. What's in the data</h3>
+      <div class="two">
+        <div class="panel"><span class="label">Films per genre</span><div class="bars" id="chartGenre"></div></div>
+        <div class="panel"><span class="label">Films per language</span><div class="bars" id="chartLang"></div></div>
+        <div class="panel"><span class="label">Films per decade</span><div class="bars" id="chartDecade"></div></div>
+        <div class="panel"><span class="label">Average rating by language</span><div class="bars" id="chartAvg"></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>5. User testing</h3>
+      <p class="muted" style="max-width:70ch">Votes from the Good pick / Not for me buttons are saved in this browser. Copy them into your report after each testing round.</p>
+      <div class="panel" id="feedbackPanel"></div>
+    </div>
+  </section>
+
+  <!-- ================= ABOUT ================= -->
+  <section class="view" id="view-about" hidden>
+    <div class="banner" id="aboutBanner"></div>
+    <div class="section">
+      <div class="eyebrow" id="aboutEyebrow"></div>
+      <h2 id="aboutTitle"></h2>
+      <div class="prose"><p id="aboutProblem"></p></div>
+      <div class="callout"><span class="label">Our challenge question</span><p id="aboutHmw" style="margin-top:6px"></p></div>
+    </div>
+    <div class="two">
+      <div class="prose"><h3>Who it's for</h3><ul id="aboutUsers"></ul><h3>Objectives</h3><ul id="aboutObjectives"></ul></div>
+      <div class="prose"><h3>AI used</h3><p id="aboutAi"></p><h3>Data used</h3><p id="aboutData"></p></div>
+    </div>
+    <div class="section"><h3>Sustainable Development Goals</h3><div class="sdgs" id="aboutSdgs"></div></div>
+    <div class="two">
+      <div class="prose"><h3>Ethics &amp; privacy</h3><p id="aboutEthics"></p></div>
+      <div class="prose"><h3>Future scope</h3><ul id="aboutFuture"></ul></div>
+    </div>
+    <div class="section"><h3>The team</h3><div class="team" id="aboutTeam"></div></div>
+    <div class="section"><h3>Questions</h3><div id="aboutFaq"></div></div>
+  </section>
+</main>
+
+<footer><div class="wrap" id="footer"></div></footer>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* =====================================================================
+   PROTOTYPE BUILDER'S SCRIPT
+   All data (movies, Orange similarity scores, families, site text) is
+   written in below by build_website.py. Don't edit DATA by hand:
+   edit the CSV/TOML files and run UPDATE_WEBSITE.bat instead.
+   ===================================================================== */
+const DATA = {"site":{"site":{"name":"CineMatch","tagline":"Tell us one movie you loved. We'll find your next favourite.","school":"Your School Name, City","academic_year":"2026–27","subject":"Artificial Intelligence (843) — Class XII Practical Project"},"project":{"problem_statement":"With thousands of films released across many languages every year, viewers —\nespecially students with limited free time — spend more time scrolling than\nwatching. Generic \"top 10\" lists ignore personal taste, and good regional\nfilms often go unnoticed.\n","how_might_we":"How can we help students and families find films that match their taste\nso that they spend less time searching and discover more good cinema,\nincluding films in other Indian languages?\n","users":["Students looking for something to watch after exams","Families choosing a film everyone will enjoy","Movie lovers wanting to explore regional and world cinema"],"objectives":["Recommend similar movies from a single movie the user likes","Let users filter by genre, language, mood and rating","Explain WHY each movie was recommended (transparent AI)","Collect user feedback to improve the recommendations"],"ai_used":"Content-based filtering. Every movie is turned into a list of numbers\n(features) built from its genres, mood, language, director and cast.\nUsing the Orange Data Mining library, we compute the **cosine similarity**\nbetween movies — the closer two movies are in this feature space, the more\nalike they are. This is a type of unsupervised machine learning.\n","data_used":"A hand-curated dataset of movies (data/movies.csv) with title, year,\ngenres, director, lead cast, language, rating, runtime, mood and a short\nsummary. Ratings are approximate public audience ratings.\n","sdgs":["SDG 4 — Quality Education: teaches how recommender systems work and promotes media literacy.","SDG 10 — Reduced Inequalities: gives regional-language cinema equal visibility next to big releases.","SDG 3 — Good Health & Well-being: mood-based picks encourage healthy, intentional screen time."],"future_scope":["Collaborative filtering using ratings from many users","Summary-text similarity using natural language processing","Mobile app version and voice search","Links to legal streaming platforms where each film is available"],"ethics":"We do not collect any personal information. Feedback is stored anonymously.\nWe avoid bias by including films from many languages and eras, and we show\nusers why a movie was recommended so the AI is not a \"black box\".\n"},"team":[{"name":"Member Name","role":"Project Leader"},{"name":"Member Name","role":"Data Expert"},{"name":"Member Name","role":"Information Researcher"},{"name":"Member Name","role":"Designer & Prototype Builder"},{"name":"Member Name","role":"Tester"}],"faq":[{"q":"How does CineMatch decide what to recommend?","a":"It compares the features of every movie (genre, mood, language, director, cast) and picks the ones most similar to the movie you chose."},{"q":"Why didn't I get a movie from a different language?","a":"Language is one of the features. Turn on 'Ignore language' on the Recommend page to get picks from any language."},{"q":"Can I add more movies?","a":"Yes — the data expert adds a new row to data/movies.csv and the recommender learns it automatically."}]},"settings":{"weights":{"genres":3.0,"mood":2.0,"language":1.5,"director":1.5,"cast":1.0,"rating":0.5},"clustering":{"families":6},"display":{"default_results":6,"min_rating_default":6.0}},"engine":"Plain Python (install Orange for the full version)","builtAt":"26 Oct 2026, 05:24 AM","featureCount":205,"movies":[{"title":"3 Idiots","year":2009,"genres":["Comedy","Drama"],"director":["Rajkumar Hirani"],"cast":["Aamir Khan","R. Madhavan","Sharman Joshi"],"language":"Hindi","rating":8.4,"runtime":170,"mood":["Feel-good","Inspiring"],"overview":"Two friends search for a long-lost college buddy and remember how he challenged the pressure-cooker education system.","poster":"","family":0},{"title":"Dangal","year":2016,"genres":["Biography","Drama","Sport"],"director":["Nitesh Tiwari"],"cast":["Aamir Khan","Fatima Sana Shaikh","Sanya Malhotra"],"language":"Hindi","rating":8.3,"runtime":161,"mood":["Inspiring","Emotional"],"overview":"A former wrestler trains his daughters to become world-class wrestlers against the expectations of their village.","poster":"","family":0},{"title":"Taare Zameen Par","year":2007,"genres":["Drama","Family"],"director":["Aamir Khan"],"cast":["Darsheel Safary","Aamir Khan"],"language":"Hindi","rating":8.3,"runtime":165,"mood":["Emotional","Inspiring"],"overview":"An art teacher discovers that a struggling eight-year-old student has dyslexia and helps him find his talent.","poster":"","family":0},{"title":"Lagaan","year":2001,"genres":["Drama","Sport","Musical"],"director":["Ashutosh Gowariker"],"cast":["Aamir Khan","Gracy Singh"],"language":"Hindi","rating":8.1,"runtime":224,"mood":["Inspiring","Epic"],"overview":"Villagers in colonial India accept a cricket match challenge from British officers to escape a crushing tax.","poster":"","family":0},{"title":"Zindagi Na Milegi Dobara","year":2011,"genres":["Comedy","Drama","Adventure"],"director":["Zoya Akhtar"],"cast":["Hrithik Roshan","Farhan Akhtar","Abhay Deol"],"language":"Hindi","rating":8.2,"runtime":155,"mood":["Feel-good","Adventurous"],"overview":"Three childhood friends take a road trip across Spain and each faces a fear they have been avoiding.","poster":"","family":0},{"title":"Queen","year":2013,"genres":["Comedy","Drama"],"director":["Vikas Bahl"],"cast":["Kangana Ranaut","Rajkummar Rao"],"language":"Hindi","rating":8.1,"runtime":146,"mood":["Feel-good","Inspiring"],"overview":"After her wedding is called off a young woman goes on her honeymoon alone and discovers her independence.","poster":"","family":0},{"title":"Andhadhun","year":2018,"genres":["Crime","Thriller","Comedy"],"director":["Sriram Raghavan"],"cast":["Ayushmann Khurrana","Tabu","Radhika Apte"],"language":"Hindi","rating":8.2,"runtime":139,"mood":["Suspenseful","Dark"],"overview":"A pianist pretending to be blind accidentally witnesses a murder and gets pulled into a web of lies.","poster":"","family":2},{"title":"Drishyam","year":2015,"genres":["Crime","Thriller","Drama"],"director":["Nishikant Kamat"],"cast":["Ajay Devgn","Tabu","Shriya Saran"],"language":"Hindi","rating":8.2,"runtime":163,"mood":["Suspenseful","Emotional"],"overview":"A cable operator uses his love of films to protect his family after an accidental death.","poster":"","family":2},{"title":"Gully Boy","year":2019,"genres":["Drama","Music"],"director":["Zoya Akhtar"],"cast":["Ranveer Singh","Alia Bhatt"],"language":"Hindi","rating":7.9,"runtime":154,"mood":["Inspiring","Gritty"],"overview":"A young man from Mumbai's slums finds his voice through street rap.","poster":"","family":0},{"title":"Chak De! India","year":2007,"genres":["Drama","Sport"],"director":["Shimit Amin"],"cast":["Shah Rukh Khan","Vidya Malvade"],"language":"Hindi","rating":8.1,"runtime":153,"mood":["Inspiring","Patriotic"],"overview":"A disgraced hockey player coaches the Indian women's hockey team to redeem himself.","poster":"","family":0},{"title":"Swades","year":2004,"genres":["Drama"],"director":["Ashutosh Gowariker"],"cast":["Shah Rukh Khan","Gayatri Joshi"],"language":"Hindi","rating":8.2,"runtime":210,"mood":["Inspiring","Emotional"],"overview":"A NASA scientist returns to his Indian village and decides to help bring it electricity.","poster":"","family":0},{"title":"Kahaani","year":2012,"genres":["Mystery","Thriller"],"director":["Sujoy Ghosh"],"cast":["Vidya Balan","Parambrata Chatterjee","Nawazuddin Siddiqui"],"language":"Hindi","rating":8.1,"runtime":122,"mood":["Suspenseful","Dark"],"overview":"A pregnant woman searches Kolkata for her missing husband during the Durga Puja festival.","poster":"","family":2},{"title":"PK","year":2014,"genres":["Comedy","Drama","Sci-Fi"],"director":["Rajkumar Hirani"],"cast":["Aamir Khan","Anushka Sharma"],"language":"Hindi","rating":8.1,"runtime":153,"mood":["Thought-provoking","Feel-good"],"overview":"An alien stranded on Earth asks innocent questions that challenge religious customs.","poster":"","family":0},{"title":"Bajrangi Bhaijaan","year":2015,"genres":["Drama","Comedy","Adventure"],"director":["Kabir Khan"],"cast":["Salman Khan","Harshaali Malhotra","Nawazuddin Siddiqui"],"language":"Hindi","rating":8.1,"runtime":163,"mood":["Emotional","Feel-good"],"overview":"A devoted man sets out to return a lost mute girl to her home in Pakistan.","poster":"","family":0},{"title":"Baahubali: The Beginning","year":2015,"genres":["Action","Drama","Fantasy"],"director":["S. S. Rajamouli"],"cast":["Prabhas","Rana Daggubati","Tamannaah"],"language":"Telugu","rating":8.0,"runtime":159,"mood":["Epic","Adventurous"],"overview":"A young man raised by villagers learns of his royal heritage and a kingdom ruled by a tyrant.","poster":"","family":1},{"title":"RRR","year":2022,"genres":["Action","Drama","Historical"],"director":["S. S. Rajamouli"],"cast":["N. T. Rama Rao Jr.","Ram Charan","Alia Bhatt"],"language":"Telugu","rating":7.8,"runtime":187,"mood":["Epic","Patriotic"],"overview":"Two revolutionaries in 1920s India form an unlikely friendship while fighting colonial rule.","poster":"","family":1},{"title":"Jersey","year":2019,"genres":["Drama","Sport"],"director":["Gowtam Tinnanuri"],"cast":["Nani","Shraddha Srinath"],"language":"Telugu","rating":8.5,"runtime":157,"mood":["Emotional","Inspiring"],"overview":"A failed cricketer in his thirties returns to the game to fulfil his son's small wish.","poster":"","family":0},{"title":"Vikram Vedha","year":2017,"genres":["Action","Crime","Thriller"],"director":["Pushkar–Gayathri"],"cast":["R. Madhavan","Vijay Sethupathi"],"language":"Tamil","rating":8.2,"runtime":147,"mood":["Suspenseful","Thought-provoking"],"overview":"An honest cop hunting a gangster is told stories that blur the line between right and wrong.","poster":"","family":2},{"title":"Super Deluxe","year":2019,"genres":["Drama","Comedy","Crime"],"director":["Thiagarajan Kumararaja"],"cast":["Vijay Sethupathi","Fahadh Faasil","Samantha"],"language":"Tamil","rating":8.3,"runtime":176,"mood":["Dark","Thought-provoking"],"overview":"Several unconnected lives in Chennai collide over one unusual day.","poster":"","family":2},{"title":"Kantara","year":2022,"genres":["Action","Drama","Thriller"],"director":["Rishab Shetty"],"cast":["Rishab Shetty","Sapthami Gowda"],"language":"Kannada","rating":8.2,"runtime":148,"mood":["Epic","Mystical"],"overview":"A village rebel clashes with a forest officer over land tied to an ancient folk deity.","poster":"","family":1},{"title":"Kumbalangi Nights","year":2019,"genres":["Drama","Comedy","Romance"],"director":["Madhu C. Narayanan"],"cast":["Soubin Shahir","Shane Nigam","Fahadh Faasil"],"language":"Malayalam","rating":8.5,"runtime":135,"mood":["Feel-good","Emotional"],"overview":"Four estranged brothers living in a fishing village slowly learn to become a family.","poster":"","family":0},{"title":"Pather Panchali","year":1955,"genres":["Drama","Family"],"director":["Satyajit Ray"],"cast":["Subir Banerjee","Karuna Banerjee"],"language":"Bengali","rating":8.2,"runtime":125,"mood":["Emotional","Classic"],"overview":"A poor family in rural Bengal struggles to survive as their young son grows up.","poster":"","family":0},{"title":"Gupi Gayen Bagha Bayen","year":1969,"genres":["Fantasy","Comedy","Musical"],"director":["Satyajit Ray"],"cast":["Tapen Chatterjee","Rabi Ghosh"],"language":"Bengali","rating":8.7,"runtime":132,"mood":["Feel-good","Classic"],"overview":"Two untalented musicians receive magical boons from a ghost king and try to stop a war.","poster":"","family":5},{"title":"Sholay","year":1975,"genres":["Action","Adventure","Drama"],"director":["Ramesh Sippy"],"cast":["Dharmendra","Amitabh Bachchan","Amjad Khan"],"language":"Hindi","rating":8.1,"runtime":204,"mood":["Epic","Classic"],"overview":"A retired police officer hires two small-time crooks to capture a ruthless bandit.","poster":"","family":1},{"title":"The Shawshank Redemption","year":1994,"genres":["Drama"],"director":["Frank Darabont"],"cast":["Tim Robbins","Morgan Freeman"],"language":"English","rating":9.3,"runtime":142,"mood":["Inspiring","Emotional"],"overview":"A banker wrongly sent to prison forms a friendship and holds on to hope over two decades.","poster":"","family":0},{"title":"The Dark Knight","year":2008,"genres":["Action","Crime","Drama"],"director":["Christopher Nolan"],"cast":["Christian Bale","Heath Ledger"],"language":"English","rating":9.0,"runtime":152,"mood":["Dark","Suspenseful"],"overview":"Batman faces a chaotic criminal mastermind who wants to watch Gotham burn.","poster":"","family":2},{"title":"Inception","year":2010,"genres":["Action","Sci-Fi","Thriller"],"director":["Christopher Nolan"],"cast":["Leonardo DiCaprio","Joseph Gordon-Levitt","Elliot Page"],"language":"English","rating":8.8,"runtime":148,"mood":["Thought-provoking","Suspenseful"],"overview":"A thief who steals secrets through dreams is asked to plant an idea instead.","poster":"","family":1},{"title":"Interstellar","year":2014,"genres":["Sci-Fi","Adventure","Drama"],"director":["Christopher Nolan"],"cast":["Matthew McConaughey","Anne Hathaway","Jessica Chastain"],"language":"English","rating":8.7,"runtime":169,"mood":["Epic","Emotional"],"overview":"Astronauts travel through a wormhole to find humanity a new home as Earth fails.","poster":"","family":1},{"title":"Forrest Gump","year":1994,"genres":["Drama","Romance"],"director":["Robert Zemeckis"],"cast":["Tom Hanks","Robin Wright"],"language":"English","rating":8.8,"runtime":142,"mood":["Feel-good","Emotional"],"overview":"A kind man with a simple outlook unknowingly takes part in decades of American history.","poster":"","family":0},{"title":"The Matrix","year":1999,"genres":["Action","Sci-Fi"],"director":["Lana Wachowski","Lilly Wachowski"],"cast":["Keanu Reeves","Laurence Fishburne","Carrie-Anne Moss"],"language":"English","rating":8.7,"runtime":136,"mood":["Thought-provoking","Adventurous"],"overview":"A hacker learns that the world he knows is a simulation and joins a rebellion.","poster":"","family":1},{"title":"Spirited Away","year":2001,"genres":["Animation","Fantasy","Adventure"],"director":["Hayao Miyazaki"],"cast":["Rumi Hiiragi","Miyu Irino"],"language":"Japanese","rating":8.6,"runtime":125,"mood":["Mystical","Feel-good"],"overview":"A girl trapped in a world of spirits works in a bathhouse to save her parents.","poster":"","family":4},{"title":"Parasite","year":2019,"genres":["Thriller","Drama","Comedy"],"director":["Bong Joon Ho"],"cast":["Song Kang-ho","Choi Woo-shik","Park So-dam"],"language":"Korean","rating":8.5,"runtime":132,"mood":["Dark","Thought-provoking"],"overview":"A poor family schemes its way into working for a wealthy household with unexpected results.","poster":"","family":2},{"title":"Coco","year":2017,"genres":["Animation","Family","Musical"],"director":["Lee Unkrich"],"cast":["Anthony Gonzalez","Gael García Bernal"],"language":"English","rating":8.4,"runtime":105,"mood":["Emotional","Feel-good"],"overview":"A boy who dreams of music journeys to the Land of the Dead to uncover his family history.","poster":"","family":3},{"title":"Up","year":2009,"genres":["Animation","Adventure","Comedy"],"director":["Pete Docter"],"cast":["Ed Asner","Jordan Nagai"],"language":"English","rating":8.3,"runtime":96,"mood":["Feel-good","Emotional"],"overview":"An elderly widower ties balloons to his house and flies off with an accidental young stowaway.","poster":"","family":3},{"title":"Inside Out","year":2015,"genres":["Animation","Family","Comedy"],"director":["Pete Docter"],"cast":["Amy Poehler","Phyllis Smith"],"language":"English","rating":8.1,"runtime":95,"mood":["Feel-good","Thought-provoking"],"overview":"The emotions inside a young girl's mind guide her through a difficult move to a new city.","poster":"","family":3},{"title":"WALL-E","year":2008,"genres":["Animation","Sci-Fi","Family"],"director":["Andrew Stanton"],"cast":["Ben Burtt","Elissa Knight"],"language":"English","rating":8.4,"runtime":98,"mood":["Feel-good","Thought-provoking"],"overview":"A lonely waste-cleaning robot on an abandoned Earth falls in love and follows her into space.","poster":"","family":3},{"title":"The Lion King","year":1994,"genres":["Animation","Drama","Family"],"director":["Roger Allers","Rob Minkoff"],"cast":["Matthew Broderick","James Earl Jones"],"language":"English","rating":8.5,"runtime":88,"mood":["Emotional","Epic"],"overview":"A young lion prince flees after his father's death and must return to claim his place.","poster":"","family":0},{"title":"Toy Story","year":1995,"genres":["Animation","Comedy","Family"],"director":["John Lasseter"],"cast":["Tom Hanks","Tim Allen"],"language":"English","rating":8.3,"runtime":81,"mood":["Feel-good","Adventurous"],"overview":"A cowboy doll feels threatened when a flashy new space-ranger toy arrives.","poster":"","family":3},{"title":"Finding Nemo","year":2003,"genres":["Animation","Adventure","Family"],"director":["Andrew Stanton"],"cast":["Albert Brooks","Ellen DeGeneres"],"language":"English","rating":8.2,"runtime":100,"mood":["Feel-good","Adventurous"],"overview":"A nervous clownfish crosses the ocean to find his son.","poster":"","family":3},{"title":"The Pursuit of Happyness","year":2006,"genres":["Biography","Drama"],"director":["Gabriele Muccino"],"cast":["Will Smith","Jaden Smith"],"language":"English","rating":8.0,"runtime":117,"mood":["Inspiring","Emotional"],"overview":"A struggling salesman takes an unpaid internship while raising his son through homelessness.","poster":"","family":0},{"title":"Dead Poets Society","year":1989,"genres":["Drama"],"director":["Peter Weir"],"cast":["Robin Williams","Ethan Hawke"],"language":"English","rating":8.1,"runtime":128,"mood":["Inspiring","Thought-provoking"],"overview":"An unconventional English teacher inspires his students to think for themselves.","poster":"","family":0},{"title":"Good Will Hunting","year":1997,"genres":["Drama","Romance"],"director":["Gus Van Sant"],"cast":["Matt Damon","Robin Williams"],"language":"English","rating":8.3,"runtime":126,"mood":["Emotional","Inspiring"],"overview":"A brilliant but troubled janitor works with a therapist to face his past.","poster":"","family":0},{"title":"The Social Network","year":2010,"genres":["Biography","Drama"],"director":["David Fincher"],"cast":["Jesse Eisenberg","Andrew Garfield"],"language":"English","rating":7.8,"runtime":120,"mood":["Thought-provoking","Dark"],"overview":"The founding of a social networking site leads to lawsuits and broken friendships.","poster":"","family":0},{"title":"Hidden Figures","year":2016,"genres":["Biography","Drama","History"],"director":["Theodore Melfi"],"cast":["Taraji P. Henson","Octavia Spencer","Janelle Monáe"],"language":"English","rating":7.8,"runtime":127,"mood":["Inspiring","Feel-good"],"overview":"Three Black women mathematicians play key roles in NASA's early space missions.","poster":"","family":0},{"title":"The Imitation Game","year":2014,"genres":["Biography","Drama","Thriller"],"director":["Morten Tyldum"],"cast":["Benedict Cumberbatch","Keira Knightley"],"language":"English","rating":8.0,"runtime":114,"mood":["Thought-provoking","Emotional"],"overview":"Mathematician Alan Turing leads a team racing to crack the Nazi Enigma code.","poster":"","family":0},{"title":"Avengers: Endgame","year":2019,"genres":["Action","Adventure","Sci-Fi"],"director":["Anthony Russo","Joe Russo"],"cast":["Robert Downey Jr.","Chris Evans","Scarlett Johansson"],"language":"English","rating":8.4,"runtime":181,"mood":["Epic","Adventurous"],"overview":"The surviving heroes attempt one last mission to undo a devastating loss.","poster":"","family":1},{"title":"Jurassic Park","year":1993,"genres":["Adventure","Sci-Fi","Thriller"],"director":["Steven Spielberg"],"cast":["Sam Neill","Laura Dern","Jeff Goldblum"],"language":"English","rating":8.2,"runtime":127,"mood":["Adventurous","Suspenseful"],"overview":"Visitors to an island theme park of cloned dinosaurs must survive when the systems fail.","poster":"","family":1},{"title":"Gravity","year":2013,"genres":["Sci-Fi","Thriller","Drama"],"director":["Alfonso Cuarón"],"cast":["Sandra Bullock","George Clooney"],"language":"English","rating":7.7,"runtime":91,"mood":["Suspenseful","Emotional"],"overview":"Two astronauts are stranded in orbit after debris destroys their shuttle.","poster":"","family":2},{"title":"The Martian","year":2015,"genres":["Sci-Fi","Adventure","Drama"],"director":["Ridley Scott"],"cast":["Matt Damon","Jessica Chastain"],"language":"English","rating":8.0,"runtime":144,"mood":["Inspiring","Adventurous"],"overview":"An astronaut left behind on Mars uses science and humour to survive until rescue.","poster":"","family":1},{"title":"Knives Out","year":2019,"genres":["Mystery","Comedy","Crime"],"director":["Rian Johnson"],"cast":["Daniel Craig","Ana de Armas","Chris Evans"],"language":"English","rating":7.9,"runtime":130,"mood":["Suspenseful","Feel-good"],"overview":"A detective investigates the suspicious death of a wealthy crime novelist and his scheming family.","poster":"","family":2},{"title":"La La Land","year":2016,"genres":["Romance","Musical","Drama"],"director":["Damien Chazelle"],"cast":["Ryan Gosling","Emma Stone"],"language":"English","rating":8.0,"runtime":128,"mood":["Romantic","Emotional"],"overview":"A jazz pianist and an aspiring actress fall in love while chasing their dreams in Los Angeles.","poster":"","family":0},{"title":"Whiplash","year":2014,"genres":["Drama","Music"],"director":["Damien Chazelle"],"cast":["Miles Teller","J. K. Simmons"],"language":"English","rating":8.5,"runtime":106,"mood":["Intense","Thought-provoking"],"overview":"A young drummer pushes himself to the edge under a ruthless music instructor.","poster":"","family":0},{"title":"Paddington 2","year":2017,"genres":["Comedy","Family","Adventure"],"director":["Paul King"],"cast":["Ben Whishaw","Hugh Grant"],"language":"English","rating":7.8,"runtime":103,"mood":["Feel-good","Adventurous"],"overview":"A polite bear is wrongly jailed and must clear his name with help from his friends.","poster":"","family":3},{"title":"Life of Pi","year":2012,"genres":["Adventure","Drama","Fantasy"],"director":["Ang Lee"],"cast":["Suraj Sharma","Irrfan Khan"],"language":"English","rating":7.9,"runtime":127,"mood":["Mystical","Inspiring"],"overview":"An Indian boy survives a shipwreck and shares a lifeboat with a Bengal tiger.","poster":"","family":4},{"title":"Slumdog Millionaire","year":2008,"genres":["Drama","Romance"],"director":["Danny Boyle"],"cast":["Dev Patel","Freida Pinto","Anil Kapoor"],"language":"English","rating":8.0,"runtime":120,"mood":["Emotional","Gritty"],"overview":"A young man from Mumbai's slums reaches the final round of a quiz show and recalls how he knew each answer.","poster":"","family":0}],"families":[{"id":0,"name":"Emotional Drama & Comedy","size":26},{"id":1,"name":"Epic Action & Drama","size":10},{"id":2,"name":"Suspenseful Crime & Thriller","size":9},{"id":3,"name":"Feel-good Animation & Family","size":7},{"id":4,"name":"Mystical Fantasy & Adventure","size":2},{"id":5,"name":"Feel-good Fantasy & Comedy","size":1}],"sim":[[1.0,0.433,0.495,0.438,0.644,0.857,0.301,0.301,0.465,0.465,0.546,0.072,0.739,0.644,0.242,0.242,0.397,0.031,0.479,0.245,0.585,0.277,0.352,0.301,0.467,0.245,0.005,0.242,0.397,0.005,0.112,0.479,0.111,0.352,0.352,0.111,0.239,0.352,0.111,0.397,0.467,0.397,0.276,0.453,0.245,0.005,0.005,0.245,0.352,0.347,0.245,0.277,0.351,0.352,0.272],[0.433,1.0,0.547,0.603,0.268,0.413,0.057,0.361,0.413,0.654,0.611,0.064,0.295,0.361,0.215,0.215,0.701,0.004,0.215,0.217,0.309,0.353,0.004,0.268,0.54,0.218,0.004,0.309,0.353,0.005,0.004,0.215,0.099,0.099,0.004,0.004,0.304,0.004,0.004,0.701,0.414,0.46,0.487,0.519,0.526,0.004,0.004,0.312,0.312,0.004,0.312,0.246,0.004,0.312,0.347],[0.495,0.547,1.0,0.445,0.306,0.472,0.065,0.413,0.472,0.472,0.698,0.073,0.337,0.413,0.246,0.245,0.526,0.005,0.246,0.249,0.353,0.679,0.005,0.306,0.618,0.249,0.005,0.353,0.403,0.005,0.005,0.246,0.357,0.113,0.248,0.249,0.585,0.249,0.249,0.525,0.474,0.526,0.281,0.353,0.357,0.005,0.005,0.357,0.357,0.004,0.357,0.281,0.248,0.357,0.397],[0.438,0.603,0.445,1.0,0.271,0.418,0.057,0.271,0.418,0.662,0.563,0.064,0.298,0.271,0.312,0.312,0.601,0.004,0.217,0.316,0.218,0.248,0.22,0.366,0.42,0.22,0.004,0.312,0.249,0.005,0.004,0.218,0.22,0.004,0.004,0.004,0.308,0.004,0.004,0.357,0.419,0.357,0.248,0.312,0.22,0.096,0.004,0.22,0.316,0.004,0.436,0.249,0.004,0.316,0.245],[0.644,0.268,0.306,0.271,1.0,0.654,0.268,0.268,0.366,0.306,0.359,0.064,0.579,0.783,0.309,0.215,0.246,0.004,0.426,0.217,0.52,0.246,0.312,0.479,0.289,0.218,0.004,0.426,0.353,0.107,0.312,0.426,0.099,0.526,0.312,0.099,0.212,0.407,0.407,0.245,0.288,0.246,0.245,0.308,0.217,0.301,0.309,0.217,0.526,0.309,0.217,0.246,0.621,0.431,0.242],[0.857,0.413,0.472,0.418,0.654,1.0,0.306,0.306,0.472,0.472,0.554,0.073,0.662,0.654,0.245,0.245,0.403,0.005,0.487,0.248,0.594,0.281,0.357,0.306,0.474,0.249,0.005,0.246,0.403,0.005,0.113,0.487,0.113,0.357,0.357,0.113,0.242,0.357,0.113,0.403,0.473,0.403,0.28,0.46,0.248,0.004,0.004,0.248,0.357,0.353,0.248,0.281,0.357,0.357,0.276],[0.301,0.057,0.065,0.057,0.268,0.306,1.0,0.596,0.065,0.065,0.076,0.512,0.271,0.268,0.004,0.004,0.005,0.526,0.52,0.217,0.215,0.005,0.218,0.057,0.006,0.407,0.309,0.004,0.005,0.005,0.004,0.52,0.004,0.217,0.217,0.004,0.004,0.217,0.004,0.004,0.005,0.005,0.111,0.004,0.217,0.004,0.309,0.312,0.004,0.519,0.004,0.005,0.217,0.004,0.004],[0.301,0.361,0.413,0.271,0.268,0.306,0.596,1.0,0.306,0.306,0.485,0.407,0.271,0.361,0.215,0.215,0.353,0.526,0.426,0.431,0.309,0.353,0.004,0.268,0.415,0.526,0.309,0.309,0.353,0.005,0.004,0.426,0.099,0.099,0.004,0.004,0.304,0.004,0.004,0.353,0.288,0.353,0.245,0.215,0.526,0.004,0.309,0.621,0.217,0.309,0.312,0.246,0.004,0.217,0.347],[0.465,0.413,0.472,0.418,0.366,0.472,0.065,0.306,1.0,0.472,0.554,0.073,0.309,0.306,0.245,0.272,0.403,0.004,0.245,0.248,0.246,0.281,0.005,0.306,0.474,0.249,0.005,0.246,0.281,0.005,0.005,0.246,0.004,0.004,0.004,0.004,0.242,0.004,0.004,0.403,0.473,0.403,0.28,0.352,0.248,0.004,0.004,0.248,0.357,0.004,0.248,0.556,0.004,0.357,0.397],[0.465,0.654,0.472,0.662,0.306,0.472,0.065,0.306,0.472,1.0,0.59,0.073,0.309,0.306,0.245,0.353,0.679,0.005,0.246,0.248,0.246,0.281,0.005,0.306,0.474,0.249,0.005,0.246,0.281,0.005,0.005,0.246,0.005,0.005,0.004,0.005,0.242,0.005,0.005,0.403,0.473,0.403,0.28,0.353,0.248,0.004,0.004,0.248,0.357,0.004,0.248,0.281,0.004,0.357,0.276],[0.546,0.611,0.698,0.563,0.359,0.554,0.076,0.485,0.554,0.59,1.0,0.086,0.364,0.485,0.288,0.288,0.618,0.005,0.289,0.292,0.415,0.474,0.006,0.359,0.726,0.292,0.006,0.415,0.474,0.006,0.006,0.289,0.133,0.133,0.005,0.005,0.409,0.005,0.005,0.617,0.556,0.617,0.329,0.414,0.419,0.005,0.005,0.419,0.419,0.005,0.419,0.33,0.005,0.419,0.466],[0.072,0.064,0.073,0.064,0.064,0.073,0.512,0.407,0.073,0.073,0.086,1.0,0.064,0.09,0.004,0.004,0.005,0.352,0.11,0.245,0.005,0.005,0.005,0.064,0.007,0.218,0.348,0.005,0.005,0.005,0.005,0.348,0.005,0.004,0.004,0.005,0.004,0.004,0.004,0.005,0.006,0.005,0.125,0.004,0.245,0.004,0.347,0.351,0.004,0.347,0.004,0.005,0.004,0.004,0.005],[0.739,0.295,0.337,0.298,0.579,0.662,0.271,0.271,0.309,0.309,0.364,0.064,1.0,0.579,0.217,0.217,0.249,0.1,0.526,0.22,0.526,0.248,0.316,0.271,0.292,0.22,0.312,0.431,0.357,0.341,0.1,0.526,0.1,0.316,0.412,0.412,0.214,0.316,0.1,0.248,0.419,0.248,0.357,0.312,0.316,0.212,0.217,0.436,0.436,0.312,0.22,0.357,0.316,0.22,0.245],[0.644,0.361,0.413,0.271,0.783,0.654,0.268,0.361,0.306,0.306,0.485,0.09,0.579,1.0,0.215,0.215,0.353,0.004,0.426,0.217,0.613,0.353,0.312,0.478,0.415,0.218,0.004,0.52,0.46,0.004,0.312,0.426,0.194,0.621,0.312,0.099,0.304,0.312,0.312,0.353,0.288,0.353,0.245,0.308,0.312,0.209,0.215,0.312,0.431,0.308,0.312,0.246,0.526,0.431,0.347],[0.242,0.215,0.246,0.312,0.309,0.245,0.004,0.215,0.245,0.245,0.288,0.004,0.217,0.215,1.0,0.625,0.306,0.217,0.215,0.526,0.215,0.245,0.218,0.519,0.289,0.431,0.215,0.309,0.246,0.336,0.218,0.215,0.004,0.004,0.004,0.004,0.304,0.099,0.099,0.245,0.288,0.246,0.245,0.215,0.217,0.392,0.098,0.217,0.312,0.004,0.217,0.246,0.099,0.431,0.242],[0.242,0.215,0.245,0.312,0.215,0.245,0.004,0.215,0.272,0.353,0.288,0.004,0.217,0.215,0.625,1.0,0.306,0.217,0.215,0.526,0.215,0.245,0.004,0.519,0.289,0.431,0.215,0.309,0.246,0.234,0.004,0.215,0.004,0.004,0.004,0.004,0.304,0.004,0.004,0.245,0.288,0.245,0.245,0.215,0.217,0.301,0.004,0.217,0.217,0.004,0.217,0.246,0.004,0.217,0.242],[0.397,0.701,0.526,0.601,0.246,0.403,0.005,0.353,0.403,0.679,0.618,0.005,0.249,0.353,0.306,0.306,1.0,0.005,0.246,0.249,0.353,0.403,0.005,0.246,0.618,0.249,0.005,0.353,0.403,0.005,0.005,0.246,0.113,0.113,0.005,0.005,0.348,0.005,0.005,0.526,0.474,0.526,0.281,0.353,0.357,0.005,0.005,0.357,0.357,0.004,0.357,0.281,0.004,0.357,0.397],[0.031,0.004,0.005,0.004,0.004,0.005,0.526,0.526,0.004,0.005,0.005,0.352,0.1,0.004,0.217,0.217,0.005,1.0,0.389,0.436,0.004,0.005,0.004,0.217,0.006,0.532,0.621,0.004,0.005,0.341,0.004,0.312,0.004,0.004,0.1,0.1,0.004,0.004,0.004,0.004,0.133,0.005,0.113,0.004,0.316,0.212,0.312,0.316,0.004,0.312,0.004,0.113,0.004,0.004,0.004],[0.479,0.215,0.246,0.217,0.426,0.487,0.52,0.426,0.245,0.246,0.289,0.11,0.526,0.426,0.215,0.215,0.246,0.389,1.0,0.217,0.449,0.246,0.218,0.215,0.289,0.526,0.098,0.215,0.246,0.107,0.004,0.613,0.004,0.218,0.312,0.099,0.212,0.218,0.004,0.246,0.414,0.246,0.46,0.215,0.312,0.004,0.004,0.217,0.217,0.426,0.217,0.353,0.217,0.217,0.242],[0.245,0.217,0.249,0.316,0.217,0.248,0.217,0.431,0.248,0.248,0.292,0.245,0.22,0.217,0.526,0.526,0.249,0.436,0.217,1.0,0.218,0.248,0.004,0.526,0.292,0.436,0.431,0.312,0.249,0.237,0.1,0.431,0.004,0.004,0.004,0.004,0.308,0.004,0.004,0.248,0.292,0.249,0.248,0.217,0.436,0.304,0.217,0.436,0.22,0.004,0.22,0.249,0.004,0.316,0.245],[0.585,0.309,0.353,0.218,0.52,0.594,0.215,0.309,0.246,0.246,0.415,0.005,0.526,0.613,0.215,0.215,0.353,0.004,0.449,0.218,1.0,0.353,0.313,0.215,0.415,0.218,0.004,0.309,0.701,0.005,0.099,0.426,0.194,0.407,0.312,0.099,0.304,0.312,0.099,0.353,0.289,0.594,0.246,0.309,0.312,0.004,0.004,0.312,0.217,0.309,0.526,0.246,0.312,0.217,0.585],[0.277,0.353,0.679,0.248,0.246,0.281,0.005,0.353,0.281,0.281,0.474,0.005,0.248,0.353,0.245,0.245,0.403,0.005,0.246,0.248,0.353,1.0,0.235,0.353,0.474,0.249,0.005,0.353,0.403,0.005,0.005,0.246,0.357,0.113,0.248,0.249,0.585,0.249,0.248,0.403,0.33,0.403,0.28,0.245,0.357,0.004,0.005,0.357,0.248,0.004,0.357,0.281,0.248,0.248,0.397],[0.352,0.004,0.005,0.22,0.312,0.357,0.218,0.004,0.005,0.005,0.006,0.005,0.316,0.312,0.218,0.004,0.005,0.004,0.218,0.004,0.313,0.235,1.0,0.099,0.006,0.005,0.005,0.004,0.114,0.005,0.316,0.218,0.316,0.316,0.316,0.1,0.004,0.316,0.1,0.005,0.006,0.005,0.005,0.099,0.004,0.004,0.004,0.004,0.004,0.312,0.22,0.005,0.316,0.22,0.005],[0.301,0.268,0.306,0.366,0.479,0.306,0.057,0.268,0.306,0.306,0.359,0.064,0.271,0.478,0.519,0.519,0.246,0.217,0.215,0.526,0.215,0.353,0.099,1.0,0.289,0.431,0.215,0.52,0.246,0.234,0.218,0.215,0.004,0.217,0.004,0.004,0.304,0.004,0.217,0.245,0.288,0.246,0.245,0.215,0.217,0.506,0.215,0.217,0.431,0.004,0.217,0.246,0.217,0.431,0.242],[0.467,0.54,0.618,0.42,0.289,0.474,0.006,0.415,0.474,0.474,0.726,0.007,0.292,0.415,0.289,0.289,0.618,0.006,0.289,0.292,0.415,0.474,0.006,0.289,1.0,0.364,0.077,0.486,0.555,0.084,0.006,0.289,0.205,0.205,0.078,0.078,0.479,0.078,0.078,0.698,0.652,0.698,0.411,0.485,0.491,0.075,0.077,0.491,0.491,0.077,0.491,0.411,0.077,0.491,0.546],[0.245,0.218,0.249,0.22,0.218,0.249,0.407,0.526,0.249,0.249,0.292,0.218,0.22,0.218,0.431,0.431,0.249,0.532,0.526,0.436,0.218,0.249,0.005,0.431,0.364,1.0,0.419,0.325,0.31,0.296,0.005,0.313,0.059,0.058,0.058,0.059,0.267,0.058,0.058,0.31,0.364,0.31,0.418,0.271,0.274,0.264,0.153,0.37,0.274,0.366,0.274,0.31,0.058,0.274,0.305],[0.005,0.004,0.005,0.004,0.004,0.005,0.309,0.309,0.005,0.005,0.006,0.348,0.312,0.004,0.215,0.215,0.005,0.621,0.098,0.431,0.004,0.005,0.005,0.215,0.077,0.419,1.0,0.321,0.065,0.624,0.004,0.309,0.058,0.058,0.152,0.366,0.056,0.058,0.058,0.065,0.202,0.065,0.172,0.057,0.366,0.467,0.572,0.579,0.271,0.151,0.058,0.172,0.057,0.057,0.064],[0.242,0.309,0.353,0.312,0.426,0.246,0.004,0.309,0.246,0.246,0.415,0.005,0.431,0.52,0.309,0.309,0.353,0.004,0.215,0.312,0.309,0.353,0.004,0.52,0.486,0.325,0.321,1.0,0.413,0.292,0.218,0.215,0.153,0.366,0.058,0.271,0.449,0.058,0.271,0.413,0.359,0.413,0.306,0.268,0.366,0.558,0.479,0.579,0.721,0.057,0.366,0.306,0.271,0.484,0.407],[0.397,0.353,0.403,0.249,0.353,0.403,0.005,0.353,0.281,0.281,0.474,0.005,0.357,0.46,0.246,0.246,0.403,0.005,0.246,0.249,0.701,0.403,0.114,0.246,0.555,0.31,0.065,0.413,1.0,0.071,0.113,0.246,0.283,0.283,0.174,0.174,0.407,0.201,0.174,0.472,0.411,0.748,0.35,0.413,0.418,0.064,0.065,0.418,0.31,0.172,0.662,0.35,0.174,0.31,0.736],[0.005,0.005,0.005,0.005,0.107,0.005,0.005,0.005,0.005,0.005,0.006,0.005,0.341,0.004,0.336,0.234,0.005,0.341,0.107,0.237,0.005,0.005,0.005,0.234,0.084,0.296,0.624,0.292,0.071,1.0,0.005,0.107,0.063,0.063,0.166,0.399,0.061,0.166,0.166,0.071,0.22,0.071,0.187,0.062,0.166,0.608,0.394,0.295,0.399,0.062,0.063,0.188,0.166,0.063,0.07],[0.112,0.004,0.005,0.004,0.312,0.113,0.004,0.004,0.005,0.005,0.006,0.005,0.1,0.312,0.218,0.004,0.005,0.004,0.004,0.1,0.099,0.005,0.316,0.218,0.006,0.005,0.004,0.218,0.113,0.005,1.0,0.004,0.316,0.532,0.316,0.316,0.215,0.316,0.532,0.005,0.006,0.005,0.005,0.099,0.004,0.212,0.218,0.004,0.22,0.099,0.004,0.005,0.316,0.532,0.005],[0.479,0.215,0.246,0.218,0.426,0.487,0.52,0.426,0.246,0.246,0.289,0.348,0.526,0.426,0.215,0.215,0.246,0.312,0.613,0.431,0.426,0.246,0.218,0.215,0.289,0.313,0.309,0.215,0.246,0.107,0.004,1.0,0.004,0.218,0.312,0.099,0.212,0.218,0.004,0.246,0.414,0.246,0.46,0.215,0.526,0.004,0.215,0.431,0.217,0.215,0.217,0.353,0.217,0.217,0.242],[0.111,0.099,0.357,0.22,0.099,0.113,0.004,0.099,0.004,0.005,0.133,0.005,0.1,0.194,0.004,0.004,0.113,0.004,0.004,0.004,0.194,0.357,0.316,0.004,0.205,0.059,0.058,0.153,0.283,0.063,0.316,0.004,1.0,0.466,0.586,0.586,0.571,0.586,0.586,0.174,0.077,0.174,0.065,0.152,0.154,0.056,0.057,0.154,0.058,0.152,0.37,0.066,0.37,0.058,0.171],[0.352,0.099,0.113,0.004,0.526,0.357,0.217,0.099,0.004,0.005,0.133,0.004,0.316,0.621,0.004,0.004,0.113,0.004,0.218,0.004,0.407,0.113,0.316,0.217,0.205,0.058,0.058,0.366,0.283,0.063,0.532,0.218,0.466,1.0,0.64,0.37,0.361,0.586,0.586,0.174,0.077,0.174,0.065,0.152,0.154,0.264,0.271,0.154,0.274,0.366,0.154,0.066,0.586,0.274,0.171],[0.352,0.004,0.248,0.004,0.312,0.357,0.217,0.004,0.004,0.004,0.005,0.004,0.412,0.312,0.004,0.004,0.005,0.1,0.312,0.004,0.312,0.248,0.316,0.004,0.078,0.058,0.152,0.058,0.174,0.166,0.316,0.312,0.586,0.64,1.0,0.682,0.477,0.802,0.586,0.065,0.204,0.066,0.174,0.152,0.154,0.056,0.057,0.058,0.058,0.366,0.058,0.174,0.586,0.058,0.064],[0.111,0.004,0.249,0.004,0.099,0.113,0.004,0.004,0.004,0.005,0.005,0.005,0.412,0.099,0.004,0.004,0.005,0.1,0.099,0.004,0.099,0.249,0.1,0.004,0.078,0.059,0.366,0.271,0.174,0.399,0.316,0.099,0.586,0.37,0.682,1.0,0.477,0.586,0.64,0.066,0.204,0.066,0.174,0.152,0.154,0.264,0.271,0.274,0.274,0.152,0.058,0.174,0.37,0.058,0.065],[0.239,0.304,0.585,0.308,0.212,0.242,0.004,0.304,0.242,0.242,0.409,0.004,0.214,0.304,0.304,0.304,0.348,0.004,0.212,0.308,0.304,0.585,0.004,0.304,0.479,0.267,0.056,0.449,0.407,0.061,0.215,0.212,0.571,0.361,0.477,0.477,1.0,0.477,0.477,0.407,0.354,0.407,0.301,0.264,0.36,0.145,0.056,0.36,0.267,0.056,0.36,0.302,0.267,0.267,0.401],[0.352,0.004,0.249,0.004,0.407,0.357,0.217,0.004,0.004,0.005,0.005,0.004,0.316,0.312,0.099,0.004,0.005,0.004,0.218,0.004,0.312,0.249,0.316,0.004,0.078,0.058,0.058,0.058,0.201,0.166,0.316,0.218,0.586,0.586,0.802,0.586,0.477,1.0,0.682,0.065,0.077,0.066,0.065,0.152,0.058,0.148,0.152,0.058,0.154,0.366,0.058,0.066,0.682,0.058,0.065],[0.111,0.004,0.249,0.004,0.407,0.113,0.004,0.004,0.004,0.005,0.005,0.004,0.1,0.312,0.099,0.004,0.005,0.004,0.004,0.004,0.099,0.248,0.1,0.217,0.078,0.058,0.058,0.271,0.174,0.166,0.532,0.004,0.586,0.586,0.586,0.64,0.477,0.682,1.0,0.065,0.077,0.066,0.065,0.152,0.058,0.356,0.366,0.058,0.37,0.152,0.058,0.066,0.682,0.274,0.064],[0.397,0.701,0.525,0.357,0.245,0.403,0.004,0.353,0.403,0.403,0.617,0.005,0.248,0.353,0.245,0.245,0.526,0.004,0.246,0.248,0.353,0.403,0.005,0.245,0.698,0.31,0.065,0.413,0.472,0.071,0.005,0.246,0.174,0.174,0.065,0.066,0.407,0.065,0.065,1.0,0.554,0.594,0.625,0.654,0.662,0.063,0.065,0.418,0.418,0.065,0.418,0.35,0.065,0.418,0.465],[0.467,0.414,0.474,0.419,0.288,0.473,0.005,0.288,0.473,0.473,0.556,0.006,0.419,0.288,0.288,0.288,0.474,0.133,0.414,0.292,0.289,0.33,0.006,0.288,0.652,0.364,0.202,0.359,0.411,0.22,0.006,0.414,0.077,0.077,0.204,0.204,0.354,0.077,0.077,0.554,1.0,0.59,0.554,0.485,0.491,0.074,0.076,0.363,0.491,0.076,0.363,0.555,0.077,0.491,0.404],[0.397,0.46,0.526,0.357,0.246,0.403,0.005,0.353,0.403,0.403,0.617,0.005,0.248,0.353,0.246,0.245,0.526,0.005,0.246,0.249,0.594,0.403,0.005,0.246,0.698,0.31,0.065,0.413,0.748,0.071,0.005,0.246,0.174,0.174,0.066,0.066,0.407,0.066,0.066,0.594,0.59,1.0,0.349,0.413,0.418,0.063,0.065,0.418,0.445,0.065,0.662,0.35,0.065,0.418,0.736],[0.276,0.487,0.281,0.248,0.245,0.28,0.111,0.245,0.28,0.28,0.329,0.125,0.357,0.245,0.245,0.245,0.281,0.113,0.46,0.248,0.246,0.28,0.005,0.245,0.411,0.418,0.172,0.306,0.35,0.187,0.005,0.46,0.065,0.065,0.174,0.174,0.301,0.065,0.065,0.625,0.554,0.349,1.0,0.547,0.662,0.063,0.065,0.309,0.309,0.064,0.309,0.472,0.065,0.309,0.344],[0.453,0.519,0.353,0.312,0.308,0.46,0.004,0.215,0.352,0.353,0.414,0.004,0.312,0.308,0.215,0.215,0.353,0.004,0.215,0.217,0.309,0.245,0.099,0.215,0.485,0.271,0.057,0.268,0.413,0.062,0.099,0.215,0.152,0.152,0.152,0.152,0.264,0.152,0.152,0.654,0.485,0.413,0.547,1.0,0.484,0.055,0.056,0.27,0.365,0.15,0.271,0.306,0.152,0.365,0.301],[0.245,0.526,0.357,0.22,0.217,0.248,0.217,0.526,0.248,0.248,0.419,0.245,0.316,0.312,0.217,0.217,0.357,0.316,0.312,0.436,0.312,0.357,0.004,0.217,0.491,0.274,0.366,0.366,0.418,0.166,0.004,0.526,0.154,0.154,0.154,0.154,0.36,0.058,0.058,0.662,0.491,0.418,0.662,0.484,1.0,0.056,0.271,0.586,0.274,0.057,0.37,0.418,0.058,0.274,0.412],[0.005,0.004,0.005,0.096,0.301,0.004,0.004,0.004,0.004,0.004,0.005,0.004,0.212,0.209,0.392,0.301,0.005,0.212,0.004,0.304,0.004,0.004,0.004,0.506,0.075,0.264,0.467,0.558,0.064,0.608,0.212,0.004,0.056,0.264,0.056,0.264,0.145,0.148,0.356,0.063,0.074,0.063,0.063,0.055,0.056,1.0,0.558,0.264,0.564,0.078,0.056,0.063,0.356,0.264,0.062],[0.005,0.004,0.005,0.004,0.309,0.004,0.309,0.309,0.004,0.004,0.005,0.347,0.217,0.215,0.098,0.004,0.005,0.312,0.004,0.217,0.004,0.005,0.004,0.215,0.077,0.153,0.572,0.479,0.065,0.394,0.218,0.215,0.057,0.271,0.057,0.271,0.056,0.152,0.366,0.065,0.076,0.065,0.065,0.056,0.271,0.558,1.0,0.579,0.579,0.15,0.057,0.065,0.366,0.271,0.064],[0.245,0.312,0.357,0.22,0.217,0.248,0.312,0.621,0.248,0.248,0.419,0.351,0.436,0.312,0.217,0.217,0.357,0.316,0.217,0.436,0.312,0.357,0.004,0.217,0.491,0.37,0.579,0.579,0.418,0.295,0.004,0.431,0.154,0.154,0.058,0.274,0.36,0.058,0.058,0.418,0.363,0.418,0.309,0.27,0.586,0.264,0.579,1.0,0.49,0.152,0.37,0.309,0.058,0.274,0.411],[0.352,0.312,0.357,0.316,0.526,0.357,0.004,0.217,0.357,0.357,0.419,0.004,0.436,0.431,0.312,0.217,0.357,0.004,0.217,0.22,0.217,0.248,0.004,0.431,0.491,0.274,0.271,0.721,0.31,0.399,0.22,0.217,0.058,0.274,0.058,0.274,0.267,0.154,0.37,0.418,0.491,0.445,0.309,0.365,0.274,0.564,0.579,0.49,1.0,0.057,0.274,0.31,0.37,0.586,0.305],[0.347,0.004,0.004,0.004,0.309,0.353,0.519,0.309,0.004,0.004,0.005,0.347,0.312,0.308,0.004,0.004,0.004,0.312,0.426,0.004,0.309,0.004,0.312,0.004,0.077,0.366,0.151,0.057,0.172,0.062,0.099,0.215,0.152,0.366,0.366,0.152,0.056,0.366,0.152,0.065,0.076,0.065,0.064,0.15,0.057,0.078,0.15,0.152,0.057,1.0,0.057,0.065,0.365,0.057,0.064],[0.245,0.312,0.357,0.436,0.217,0.248,0.004,0.312,0.248,0.248,0.419,0.004,0.22,0.312,0.217,0.217,0.357,0.004,0.217,0.22,0.526,0.357,0.22,0.217,0.491,0.274,0.058,0.366,0.662,0.063,0.004,0.217,0.37,0.154,0.058,0.058,0.36,0.058,0.058,0.418,0.363,0.662,0.309,0.271,0.37,0.056,0.057,0.37,0.274,0.057,1.0,0.37,0.058,0.274,0.652],[0.277,0.246,0.281,0.249,0.246,0.281,0.005,0.246,0.556,0.281,0.33,0.005,0.357,0.246,0.246,0.246,0.281,0.113,0.353,0.249,0.246,0.281,0.005,0.246,0.411,0.31,0.172,0.306,0.35,0.188,0.005,0.353,0.066,0.066,0.174,0.174,0.302,0.066,0.066,0.35,0.555,0.35,0.472,0.306,0.418,0.063,0.065,0.309,0.31,0.065,0.37,1.0,0.065,0.309,0.344],[0.351,0.004,0.248,0.004,0.621,0.357,0.217,0.004,0.004,0.004,0.005,0.004,0.316,0.526,0.099,0.004,0.004,0.004,0.217,0.004,0.312,0.248,0.316,0.217,0.077,0.058,0.057,0.271,0.174,0.166,0.316,0.217,0.37,0.586,0.586,0.37,0.267,0.682,0.682,0.065,0.077,0.065,0.065,0.152,0.058,0.356,0.366,0.058,0.37,0.365,0.058,0.065,1.0,0.274,0.064],[0.352,0.312,0.357,0.316,0.431,0.357,0.004,0.217,0.357,0.357,0.419,0.004,0.22,0.431,0.431,0.217,0.357,0.004,0.217,0.316,0.217,0.248,0.22,0.431,0.491,0.274,0.057,0.484,0.31,0.063,0.532,0.217,0.058,0.274,0.058,0.058,0.267,0.058,0.274,0.418,0.491,0.418,0.309,0.365,0.274,0.264,0.271,0.274,0.586,0.057,0.274,0.309,0.274,1.0,0.305],[0.272,0.347,0.397,0.245,0.242,0.276,0.004,0.347,0.397,0.276,0.466,0.005,0.245,0.347,0.242,0.242,0.397,0.004,0.242,0.245,0.585,0.397,0.005,0.242,0.546,0.305,0.064,0.407,0.736,0.07,0.005,0.242,0.171,0.171,0.064,0.065,0.401,0.065,0.064,0.465,0.404,0.736,0.344,0.301,0.412,0.062,0.064,0.411,0.305,0.064,0.652,0.344,0.064,0.305,1.0]],"simNoLang":[[1.0,0.398,0.458,0.403,0.622,0.846,0.257,0.257,0.426,0.426,0.508,0.005,0.722,0.622,0.257,0.257,0.426,0.033,0.51,0.261,0.622,0.297,0.374,0.257,0.508,0.261,0.005,0.258,0.426,0.006,0.119,0.51,0.119,0.374,0.374,0.119,0.254,0.374,0.119,0.426,0.508,0.426,0.296,0.482,0.261,0.005,0.005,0.26,0.374,0.369,0.261,0.297,0.374,0.374,0.292],[0.398,1.0,0.518,0.58,0.227,0.376,0.004,0.326,0.375,0.632,0.584,0.005,0.255,0.326,0.227,0.227,0.746,0.004,0.227,0.23,0.326,0.376,0.005,0.227,0.584,0.23,0.005,0.326,0.376,0.005,0.004,0.227,0.105,0.105,0.004,0.004,0.321,0.004,0.004,0.746,0.448,0.49,0.518,0.548,0.555,0.004,0.004,0.33,0.33,0.004,0.33,0.262,0.004,0.33,0.369],[0.458,0.518,1.0,0.409,0.262,0.433,0.005,0.376,0.433,0.433,0.673,0.005,0.294,0.376,0.261,0.261,0.565,0.005,0.262,0.265,0.376,0.729,0.005,0.261,0.673,0.265,0.005,0.376,0.433,0.006,0.005,0.262,0.38,0.12,0.265,0.265,0.623,0.265,0.265,0.564,0.516,0.564,0.301,0.375,0.38,0.005,0.005,0.38,0.38,0.005,0.38,0.302,0.265,0.38,0.426],[0.403,0.58,0.409,1.0,0.23,0.38,0.004,0.23,0.38,0.64,0.531,0.005,0.258,0.23,0.33,0.33,0.64,0.004,0.23,0.334,0.23,0.265,0.233,0.33,0.453,0.233,0.004,0.33,0.265,0.005,0.004,0.23,0.233,0.004,0.004,0.004,0.325,0.004,0.004,0.38,0.453,0.38,0.265,0.33,0.232,0.102,0.004,0.232,0.334,0.004,0.461,0.265,0.004,0.334,0.26],[0.622,0.227,0.262,0.23,1.0,0.632,0.227,0.227,0.326,0.261,0.312,0.005,0.555,0.771,0.326,0.227,0.262,0.004,0.45,0.23,0.549,0.261,0.33,0.449,0.312,0.23,0.004,0.45,0.376,0.113,0.33,0.45,0.105,0.555,0.33,0.105,0.224,0.43,0.43,0.261,0.312,0.262,0.261,0.326,0.23,0.317,0.326,0.229,0.555,0.326,0.23,0.262,0.656,0.455,0.257],[0.846,0.376,0.433,0.38,0.632,1.0,0.261,0.261,0.433,0.433,0.516,0.005,0.64,0.632,0.261,0.261,0.433,0.005,0.518,0.265,0.632,0.301,0.38,0.261,0.516,0.265,0.005,0.262,0.433,0.006,0.121,0.518,0.12,0.38,0.38,0.12,0.258,0.38,0.12,0.433,0.516,0.433,0.301,0.489,0.265,0.005,0.005,0.265,0.38,0.375,0.265,0.301,0.38,0.38,0.296],[0.257,0.004,0.005,0.004,0.227,0.261,1.0,0.573,0.005,0.005,0.006,0.482,0.23,0.227,0.004,0.004,0.005,0.555,0.548,0.23,0.227,0.005,0.23,0.004,0.006,0.43,0.326,0.004,0.005,0.005,0.004,0.549,0.004,0.23,0.23,0.004,0.004,0.23,0.004,0.005,0.006,0.005,0.119,0.004,0.23,0.004,0.326,0.33,0.004,0.548,0.004,0.005,0.23,0.004,0.005],[0.257,0.326,0.376,0.23,0.227,0.261,0.573,1.0,0.261,0.261,0.448,0.369,0.23,0.326,0.227,0.227,0.376,0.555,0.45,0.455,0.326,0.376,0.004,0.227,0.448,0.556,0.326,0.326,0.376,0.005,0.004,0.45,0.105,0.104,0.004,0.004,0.321,0.004,0.004,0.375,0.312,0.376,0.261,0.227,0.555,0.004,0.326,0.656,0.23,0.326,0.33,0.262,0.004,0.23,0.369],[0.426,0.375,0.433,0.38,0.326,0.433,0.005,0.261,1.0,0.433,0.516,0.005,0.265,0.261,0.261,0.29,0.433,0.005,0.261,0.265,0.261,0.301,0.005,0.261,0.516,0.265,0.005,0.262,0.302,0.005,0.005,0.261,0.005,0.005,0.005,0.005,0.258,0.005,0.005,0.433,0.516,0.433,0.301,0.375,0.265,0.005,0.005,0.264,0.38,0.004,0.265,0.597,0.004,0.38,0.426],[0.426,0.632,0.433,0.64,0.261,0.433,0.005,0.261,0.433,1.0,0.555,0.005,0.265,0.261,0.261,0.375,0.729,0.005,0.261,0.265,0.262,0.301,0.005,0.261,0.516,0.265,0.005,0.262,0.302,0.006,0.005,0.262,0.005,0.005,0.005,0.005,0.258,0.005,0.005,0.433,0.516,0.433,0.301,0.375,0.265,0.005,0.005,0.265,0.38,0.005,0.265,0.301,0.005,0.38,0.296],[0.508,0.584,0.673,0.531,0.312,0.516,0.006,0.448,0.516,0.555,1.0,0.006,0.315,0.448,0.311,0.311,0.673,0.006,0.312,0.316,0.448,0.516,0.006,0.312,0.802,0.316,0.006,0.448,0.516,0.007,0.006,0.312,0.144,0.144,0.006,0.006,0.441,0.006,0.006,0.673,0.615,0.673,0.359,0.447,0.453,0.006,0.006,0.453,0.453,0.006,0.453,0.359,0.006,0.453,0.508],[0.005,0.005,0.005,0.005,0.005,0.005,0.482,0.369,0.005,0.005,0.006,1.0,0.005,0.033,0.005,0.004,0.006,0.374,0.117,0.26,0.005,0.005,0.005,0.005,0.007,0.232,0.37,0.005,0.006,0.005,0.005,0.37,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.005,0.006,0.005,0.135,0.004,0.26,0.005,0.369,0.374,0.005,0.369,0.005,0.006,0.004,0.005,0.005],[0.722,0.255,0.294,0.258,0.555,0.64,0.23,0.23,0.265,0.265,0.315,0.005,1.0,0.555,0.23,0.229,0.265,0.106,0.555,0.233,0.555,0.265,0.334,0.23,0.316,0.233,0.33,0.455,0.38,0.362,0.106,0.555,0.106,0.334,0.435,0.436,0.226,0.334,0.106,0.265,0.453,0.265,0.38,0.33,0.334,0.224,0.23,0.461,0.461,0.33,0.232,0.38,0.334,0.232,0.26],[0.622,0.326,0.376,0.23,0.771,0.632,0.227,0.326,0.261,0.261,0.448,0.033,0.555,1.0,0.227,0.227,0.376,0.004,0.45,0.23,0.647,0.376,0.33,0.449,0.448,0.23,0.004,0.549,0.49,0.005,0.33,0.45,0.205,0.656,0.33,0.104,0.321,0.33,0.33,0.375,0.312,0.376,0.261,0.326,0.33,0.221,0.227,0.33,0.455,0.326,0.33,0.262,0.555,0.455,0.369],[0.257,0.227,0.261,0.33,0.326,0.261,0.004,0.227,0.261,0.261,0.311,0.005,0.23,0.227,1.0,0.604,0.261,0.23,0.227,0.555,0.227,0.261,0.23,0.548,0.312,0.455,0.227,0.326,0.262,0.357,0.23,0.227,0.004,0.004,0.004,0.004,0.321,0.104,0.104,0.261,0.311,0.261,0.261,0.227,0.23,0.413,0.103,0.229,0.33,0.004,0.23,0.261,0.104,0.455,0.257],[0.257,0.227,0.261,0.33,0.227,0.261,0.004,0.227,0.29,0.375,0.311,0.004,0.229,0.227,0.604,1.0,0.261,0.23,0.227,0.555,0.227,0.261,0.004,0.548,0.312,0.455,0.227,0.326,0.262,0.249,0.004,0.227,0.004,0.004,0.004,0.004,0.321,0.004,0.004,0.261,0.311,0.261,0.261,0.227,0.229,0.317,0.004,0.229,0.229,0.004,0.229,0.261,0.004,0.229,0.257],[0.426,0.746,0.565,0.64,0.262,0.433,0.005,0.376,0.433,0.729,0.673,0.006,0.265,0.376,0.261,0.261,1.0,0.005,0.262,0.265,0.376,0.433,0.005,0.262,0.673,0.265,0.005,0.376,0.433,0.006,0.005,0.262,0.121,0.121,0.005,0.005,0.37,0.005,0.005,0.564,0.516,0.565,0.301,0.375,0.38,0.005,0.005,0.38,0.38,0.005,0.38,0.302,0.005,0.38,0.426],[0.033,0.004,0.005,0.004,0.004,0.005,0.555,0.555,0.005,0.005,0.006,0.374,0.106,0.004,0.23,0.23,0.005,1.0,0.355,0.461,0.004,0.005,0.005,0.23,0.007,0.563,0.656,0.004,0.005,0.362,0.004,0.33,0.004,0.004,0.106,0.106,0.004,0.004,0.004,0.005,0.143,0.005,0.12,0.004,0.334,0.224,0.33,0.334,0.004,0.33,0.004,0.121,0.004,0.004,0.005],[0.51,0.227,0.262,0.23,0.45,0.518,0.548,0.45,0.261,0.261,0.312,0.117,0.555,0.45,0.227,0.227,0.262,0.355,1.0,0.23,0.474,0.262,0.23,0.227,0.312,0.556,0.103,0.227,0.262,0.113,0.004,0.648,0.004,0.23,0.33,0.105,0.224,0.23,0.004,0.261,0.448,0.262,0.49,0.227,0.33,0.004,0.004,0.23,0.23,0.449,0.23,0.376,0.23,0.23,0.257],[0.261,0.23,0.265,0.334,0.23,0.265,0.23,0.455,0.265,0.265,0.316,0.26,0.233,0.23,0.555,0.555,0.265,0.461,0.23,1.0,0.23,0.265,0.005,0.555,0.316,0.461,0.455,0.33,0.265,0.252,0.106,0.455,0.004,0.004,0.004,0.004,0.325,0.004,0.004,0.265,0.315,0.265,0.265,0.23,0.461,0.321,0.23,0.461,0.233,0.004,0.233,0.265,0.004,0.334,0.26],[0.622,0.326,0.376,0.23,0.549,0.632,0.227,0.326,0.261,0.262,0.448,0.005,0.555,0.647,0.227,0.227,0.376,0.004,0.474,0.23,1.0,0.376,0.33,0.227,0.448,0.23,0.005,0.326,0.746,0.005,0.105,0.45,0.205,0.43,0.33,0.105,0.321,0.33,0.105,0.376,0.312,0.632,0.261,0.326,0.33,0.004,0.004,0.33,0.23,0.326,0.555,0.262,0.33,0.23,0.622],[0.297,0.376,0.729,0.265,0.261,0.301,0.005,0.376,0.301,0.301,0.516,0.005,0.265,0.376,0.261,0.261,0.433,0.005,0.262,0.265,0.376,1.0,0.186,0.376,0.516,0.265,0.005,0.376,0.433,0.006,0.005,0.262,0.38,0.12,0.265,0.265,0.623,0.265,0.265,0.433,0.359,0.433,0.301,0.261,0.38,0.005,0.005,0.38,0.265,0.005,0.38,0.302,0.265,0.265,0.426],[0.374,0.005,0.005,0.233,0.33,0.38,0.23,0.004,0.005,0.005,0.006,0.005,0.334,0.33,0.23,0.004,0.005,0.005,0.23,0.005,0.33,0.186,1.0,0.105,0.007,0.005,0.005,0.005,0.121,0.005,0.334,0.23,0.334,0.334,0.334,0.106,0.005,0.334,0.106,0.005,0.006,0.005,0.005,0.104,0.004,0.004,0.004,0.004,0.004,0.33,0.233,0.005,0.334,0.233,0.005],[0.257,0.227,0.261,0.33,0.449,0.261,0.004,0.227,0.261,0.261,0.312,0.005,0.23,0.449,0.548,0.548,0.262,0.23,0.227,0.555,0.227,0.376,0.105,1.0,0.312,0.455,0.227,0.549,0.262,0.249,0.23,0.227,0.004,0.23,0.004,0.004,0.321,0.004,0.23,0.261,0.312,0.261,0.261,0.227,0.23,0.534,0.227,0.229,0.455,0.004,0.23,0.262,0.229,0.455,0.257],[0.508,0.584,0.673,0.453,0.312,0.516,0.006,0.448,0.516,0.516,0.802,0.007,0.316,0.448,0.312,0.312,0.673,0.007,0.312,0.316,0.448,0.516,0.007,0.312,1.0,0.316,0.007,0.448,0.517,0.008,0.007,0.312,0.144,0.144,0.006,0.007,0.441,0.007,0.007,0.673,0.615,0.673,0.359,0.448,0.453,0.006,0.006,0.453,0.453,0.006,0.453,0.36,0.006,0.453,0.508],[0.261,0.23,0.265,0.233,0.23,0.265,0.43,0.556,0.265,0.265,0.316,0.232,0.233,0.23,0.455,0.455,0.265,0.563,0.556,0.461,0.23,0.265,0.005,0.455,0.316,1.0,0.387,0.287,0.265,0.252,0.005,0.33,0.005,0.005,0.005,0.005,0.227,0.005,0.005,0.265,0.316,0.265,0.38,0.23,0.233,0.224,0.105,0.334,0.233,0.33,0.233,0.265,0.004,0.233,0.261],[0.005,0.005,0.005,0.004,0.004,0.005,0.326,0.326,0.005,0.005,0.006,0.37,0.33,0.004,0.227,0.227,0.005,0.656,0.103,0.455,0.005,0.005,0.005,0.227,0.007,0.387,1.0,0.283,0.006,0.601,0.005,0.326,0.005,0.005,0.105,0.33,0.005,0.005,0.005,0.005,0.142,0.005,0.119,0.004,0.33,0.438,0.549,0.555,0.23,0.103,0.004,0.119,0.004,0.004,0.005],[0.258,0.326,0.376,0.33,0.45,0.262,0.004,0.326,0.262,0.262,0.448,0.005,0.455,0.549,0.326,0.326,0.376,0.004,0.227,0.33,0.326,0.376,0.005,0.549,0.448,0.287,0.283,1.0,0.376,0.249,0.23,0.227,0.105,0.33,0.004,0.23,0.419,0.005,0.23,0.376,0.312,0.376,0.262,0.227,0.33,0.534,0.45,0.555,0.706,0.004,0.33,0.262,0.23,0.455,0.37],[0.426,0.376,0.433,0.265,0.376,0.433,0.005,0.376,0.302,0.302,0.516,0.006,0.38,0.49,0.262,0.262,0.433,0.005,0.262,0.265,0.746,0.433,0.121,0.262,0.517,0.265,0.006,0.376,1.0,0.006,0.121,0.262,0.236,0.236,0.121,0.121,0.37,0.15,0.121,0.433,0.359,0.729,0.301,0.376,0.38,0.005,0.005,0.38,0.265,0.119,0.64,0.302,0.12,0.265,0.717],[0.006,0.005,0.006,0.005,0.113,0.006,0.005,0.005,0.005,0.006,0.007,0.005,0.362,0.005,0.357,0.249,0.006,0.362,0.113,0.252,0.005,0.006,0.005,0.249,0.008,0.252,0.601,0.249,0.006,1.0,0.005,0.113,0.005,0.005,0.115,0.362,0.005,0.115,0.115,0.005,0.155,0.006,0.13,0.005,0.115,0.585,0.357,0.252,0.362,0.005,0.005,0.131,0.114,0.005,0.005],[0.119,0.004,0.005,0.004,0.33,0.121,0.004,0.004,0.005,0.005,0.006,0.005,0.106,0.33,0.23,0.004,0.005,0.004,0.004,0.106,0.105,0.005,0.334,0.23,0.007,0.005,0.005,0.23,0.121,0.005,1.0,0.005,0.334,0.562,0.334,0.334,0.226,0.334,0.562,0.005,0.006,0.005,0.005,0.104,0.004,0.224,0.23,0.004,0.233,0.104,0.004,0.005,0.334,0.562,0.005],[0.51,0.227,0.262,0.23,0.45,0.518,0.549,0.45,0.261,0.262,0.312,0.37,0.555,0.45,0.227,0.227,0.262,0.33,0.648,0.455,0.45,0.262,0.23,0.227,0.312,0.33,0.326,0.227,0.262,0.113,0.005,1.0,0.004,0.23,0.33,0.105,0.224,0.23,0.004,0.262,0.448,0.262,0.49,0.227,0.555,0.004,0.227,0.455,0.23,0.227,0.23,0.376,0.23,0.23,0.257],[0.119,0.105,0.38,0.233,0.105,0.12,0.004,0.105,0.005,0.005,0.144,0.005,0.106,0.205,0.004,0.004,0.121,0.004,0.004,0.004,0.205,0.38,0.334,0.004,0.144,0.005,0.005,0.105,0.236,0.005,0.334,0.004,1.0,0.436,0.562,0.562,0.547,0.562,0.562,0.12,0.006,0.121,0.005,0.104,0.106,0.004,0.004,0.106,0.004,0.104,0.334,0.005,0.334,0.004,0.118],[0.374,0.105,0.12,0.004,0.555,0.38,0.23,0.104,0.005,0.005,0.144,0.005,0.334,0.656,0.004,0.004,0.121,0.004,0.23,0.004,0.43,0.12,0.334,0.23,0.144,0.005,0.005,0.33,0.236,0.005,0.562,0.23,0.436,1.0,0.619,0.334,0.325,0.562,0.562,0.12,0.006,0.12,0.005,0.104,0.106,0.224,0.23,0.106,0.233,0.33,0.106,0.005,0.562,0.233,0.118],[0.374,0.004,0.265,0.004,0.33,0.38,0.23,0.004,0.005,0.005,0.006,0.005,0.435,0.33,0.004,0.004,0.005,0.106,0.33,0.004,0.33,0.265,0.334,0.004,0.006,0.005,0.105,0.004,0.121,0.115,0.334,0.33,0.562,0.619,1.0,0.664,0.448,0.791,0.562,0.005,0.143,0.005,0.12,0.104,0.106,0.004,0.004,0.004,0.004,0.33,0.004,0.12,0.562,0.004,0.005],[0.119,0.004,0.265,0.004,0.105,0.12,0.004,0.004,0.005,0.005,0.006,0.005,0.436,0.104,0.004,0.004,0.005,0.106,0.105,0.004,0.105,0.265,0.106,0.004,0.007,0.005,0.33,0.23,0.121,0.362,0.334,0.105,0.562,0.334,0.664,1.0,0.448,0.562,0.62,0.005,0.144,0.005,0.12,0.104,0.106,0.224,0.23,0.232,0.233,0.104,0.004,0.121,0.334,0.004,0.005],[0.254,0.321,0.623,0.325,0.224,0.258,0.004,0.321,0.258,0.258,0.441,0.005,0.226,0.321,0.321,0.321,0.37,0.004,0.224,0.325,0.321,0.623,0.005,0.321,0.441,0.227,0.005,0.419,0.37,0.005,0.226,0.224,0.547,0.325,0.448,0.448,1.0,0.448,0.448,0.37,0.307,0.37,0.257,0.223,0.325,0.099,0.004,0.325,0.226,0.004,0.325,0.258,0.226,0.226,0.364],[0.374,0.004,0.265,0.004,0.43,0.38,0.23,0.004,0.005,0.005,0.006,0.005,0.334,0.33,0.104,0.004,0.005,0.004,0.23,0.004,0.33,0.265,0.334,0.004,0.007,0.005,0.005,0.005,0.15,0.115,0.334,0.23,0.562,0.562,0.791,0.562,0.448,1.0,0.664,0.005,0.006,0.005,0.005,0.104,0.004,0.102,0.104,0.004,0.106,0.33,0.004,0.005,0.664,0.004,0.005],[0.119,0.004,0.265,0.004,0.43,0.12,0.004,0.004,0.005,0.005,0.006,0.005,0.106,0.33,0.104,0.004,0.005,0.004,0.004,0.004,0.105,0.265,0.106,0.23,0.007,0.005,0.005,0.23,0.121,0.115,0.562,0.004,0.562,0.562,0.562,0.62,0.448,0.664,1.0,0.005,0.006,0.005,0.005,0.104,0.004,0.321,0.33,0.004,0.334,0.104,0.004,0.005,0.664,0.232,0.005],[0.426,0.746,0.564,0.38,0.261,0.433,0.005,0.375,0.433,0.433,0.673,0.005,0.265,0.375,0.261,0.261,0.564,0.005,0.261,0.265,0.376,0.433,0.005,0.261,0.673,0.265,0.005,0.376,0.433,0.005,0.005,0.262,0.12,0.12,0.005,0.005,0.37,0.005,0.005,1.0,0.516,0.564,0.597,0.632,0.64,0.005,0.005,0.38,0.38,0.005,0.38,0.301,0.005,0.38,0.426],[0.508,0.448,0.516,0.453,0.312,0.516,0.006,0.312,0.516,0.516,0.615,0.006,0.453,0.312,0.311,0.311,0.516,0.143,0.448,0.315,0.312,0.359,0.006,0.312,0.615,0.316,0.142,0.312,0.359,0.155,0.006,0.448,0.006,0.006,0.143,0.144,0.307,0.006,0.006,0.516,1.0,0.555,0.516,0.447,0.453,0.006,0.006,0.315,0.453,0.005,0.315,0.516,0.005,0.453,0.353],[0.426,0.49,0.564,0.38,0.262,0.433,0.005,0.376,0.433,0.433,0.673,0.005,0.265,0.376,0.261,0.261,0.565,0.005,0.262,0.265,0.632,0.433,0.005,0.261,0.673,0.265,0.005,0.376,0.729,0.006,0.005,0.262,0.121,0.12,0.005,0.005,0.37,0.005,0.005,0.564,0.555,1.0,0.301,0.375,0.38,0.005,0.005,0.38,0.409,0.005,0.64,0.302,0.005,0.38,0.717],[0.296,0.518,0.301,0.265,0.261,0.301,0.119,0.261,0.301,0.301,0.359,0.135,0.38,0.261,0.261,0.261,0.301,0.12,0.49,0.265,0.261,0.301,0.005,0.261,0.359,0.38,0.119,0.262,0.301,0.13,0.005,0.49,0.005,0.005,0.12,0.12,0.257,0.005,0.005,0.597,0.516,0.301,1.0,0.518,0.64,0.005,0.005,0.264,0.265,0.004,0.265,0.433,0.004,0.264,0.296],[0.482,0.548,0.375,0.33,0.326,0.489,0.004,0.227,0.375,0.375,0.447,0.004,0.33,0.326,0.227,0.227,0.375,0.004,0.227,0.23,0.326,0.261,0.104,0.227,0.448,0.23,0.004,0.227,0.376,0.005,0.104,0.227,0.104,0.104,0.104,0.104,0.223,0.104,0.104,0.632,0.447,0.375,0.518,1.0,0.455,0.004,0.004,0.229,0.33,0.103,0.229,0.261,0.104,0.33,0.257],[0.261,0.555,0.38,0.232,0.23,0.265,0.23,0.555,0.265,0.265,0.453,0.26,0.334,0.33,0.23,0.229,0.38,0.334,0.33,0.461,0.33,0.38,0.004,0.23,0.453,0.233,0.33,0.33,0.38,0.115,0.004,0.555,0.106,0.106,0.106,0.106,0.325,0.004,0.004,0.64,0.453,0.38,0.64,0.455,1.0,0.004,0.23,0.562,0.232,0.004,0.334,0.38,0.004,0.232,0.374],[0.005,0.004,0.005,0.102,0.317,0.005,0.004,0.004,0.005,0.005,0.006,0.005,0.224,0.221,0.413,0.317,0.005,0.224,0.004,0.321,0.004,0.005,0.004,0.534,0.006,0.224,0.438,0.534,0.005,0.585,0.224,0.004,0.004,0.224,0.004,0.224,0.099,0.102,0.321,0.005,0.006,0.005,0.005,0.004,0.004,1.0,0.534,0.223,0.541,0.028,0.004,0.005,0.321,0.224,0.005],[0.005,0.004,0.005,0.004,0.326,0.005,0.326,0.326,0.005,0.005,0.006,0.369,0.23,0.227,0.103,0.004,0.005,0.33,0.004,0.23,0.004,0.005,0.004,0.227,0.006,0.105,0.549,0.45,0.005,0.357,0.23,0.227,0.004,0.23,0.004,0.23,0.004,0.104,0.33,0.005,0.006,0.005,0.005,0.004,0.23,0.534,1.0,0.555,0.555,0.103,0.004,0.005,0.33,0.23,0.005],[0.26,0.33,0.38,0.232,0.229,0.265,0.33,0.656,0.264,0.265,0.453,0.374,0.461,0.33,0.229,0.229,0.38,0.334,0.23,0.461,0.33,0.38,0.004,0.229,0.453,0.334,0.555,0.555,0.38,0.252,0.004,0.455,0.106,0.106,0.004,0.232,0.325,0.004,0.004,0.38,0.315,0.38,0.264,0.229,0.562,0.223,0.555,1.0,0.461,0.104,0.334,0.265,0.004,0.232,0.374],[0.374,0.33,0.38,0.334,0.555,0.38,0.004,0.23,0.38,0.38,0.453,0.005,0.461,0.455,0.33,0.229,0.38,0.004,0.23,0.233,0.23,0.265,0.004,0.455,0.453,0.233,0.23,0.706,0.265,0.362,0.233,0.23,0.004,0.233,0.004,0.233,0.226,0.106,0.334,0.38,0.453,0.409,0.265,0.33,0.232,0.541,0.555,0.461,1.0,0.004,0.232,0.265,0.334,0.562,0.26],[0.369,0.004,0.005,0.004,0.326,0.375,0.548,0.326,0.004,0.005,0.006,0.369,0.33,0.326,0.004,0.004,0.005,0.33,0.449,0.004,0.326,0.005,0.33,0.004,0.006,0.33,0.103,0.004,0.119,0.005,0.104,0.227,0.104,0.33,0.33,0.104,0.004,0.33,0.104,0.005,0.005,0.005,0.004,0.103,0.004,0.028,0.103,0.104,0.004,1.0,0.004,0.005,0.33,0.004,0.004],[0.261,0.33,0.38,0.461,0.23,0.265,0.004,0.33,0.265,0.265,0.453,0.005,0.232,0.33,0.23,0.229,0.38,0.004,0.23,0.233,0.555,0.38,0.233,0.23,0.453,0.233,0.004,0.33,0.64,0.005,0.004,0.23,0.334,0.106,0.004,0.004,0.325,0.004,0.004,0.38,0.315,0.64,0.265,0.229,0.334,0.004,0.004,0.334,0.232,0.004,1.0,0.33,0.004,0.232,0.63],[0.297,0.262,0.302,0.265,0.262,0.301,0.005,0.262,0.597,0.301,0.359,0.006,0.38,0.262,0.261,0.261,0.302,0.121,0.376,0.265,0.262,0.302,0.005,0.262,0.36,0.265,0.119,0.262,0.302,0.131,0.005,0.376,0.005,0.005,0.12,0.121,0.258,0.005,0.005,0.301,0.516,0.302,0.433,0.261,0.38,0.005,0.005,0.265,0.265,0.005,0.33,1.0,0.005,0.265,0.297],[0.374,0.004,0.265,0.004,0.656,0.38,0.23,0.004,0.004,0.005,0.006,0.004,0.334,0.555,0.104,0.004,0.005,0.004,0.23,0.004,0.33,0.265,0.334,0.229,0.006,0.004,0.004,0.23,0.12,0.114,0.334,0.23,0.334,0.562,0.562,0.334,0.226,0.664,0.664,0.005,0.005,0.005,0.004,0.104,0.004,0.321,0.33,0.004,0.334,0.33,0.004,0.005,1.0,0.232,0.004],[0.374,0.33,0.38,0.334,0.455,0.38,0.004,0.23,0.38,0.38,0.453,0.005,0.232,0.455,0.455,0.229,0.38,0.004,0.23,0.334,0.23,0.265,0.233,0.455,0.453,0.233,0.004,0.455,0.265,0.005,0.562,0.23,0.004,0.233,0.004,0.004,0.226,0.004,0.232,0.38,0.453,0.38,0.264,0.33,0.232,0.224,0.23,0.232,0.562,0.004,0.232,0.265,0.232,1.0,0.26],[0.292,0.369,0.426,0.26,0.257,0.296,0.005,0.369,0.426,0.296,0.508,0.005,0.26,0.369,0.257,0.257,0.426,0.005,0.257,0.26,0.622,0.426,0.005,0.257,0.508,0.261,0.005,0.37,0.717,0.005,0.005,0.257,0.118,0.118,0.005,0.005,0.364,0.005,0.005,0.426,0.353,0.717,0.296,0.257,0.374,0.005,0.005,0.374,0.26,0.004,0.63,0.297,0.004,0.26,1.0]]};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const M = DATA.movies;
+const S = DATA.site;
+const uniq = (arr) => [...new Set(arr)].filter(Boolean).sort((a, b) => a.localeCompare(b));
+const allGenres = uniq(M.flatMap((m) => m.genres));
+const allMoods = uniq(M.flatMap((m) => m.mood));
+const allLangs = uniq(M.map((m) => m.language));
+/* =====================================================================
+   ARTWORK  (Designer)
+   Every movie without a poster_url gets its own night-sky poster.
+   The picture depends on the genre: planet = Sci-Fi, crescent moon =
+   Animation/Fantasy/Family, heart = Romance/Musical, city skyline =
+   Thriller/Crime/Mystery, lightning = Action, mountains = Adventure/
+   Sport/History, smile = Comedy, film reel = everything else.
+   ===================================================================== */
+const SKIES = [["#0A1730", "#2D5394"], ["#0B1433", "#46489A"], ["#06192C", "#1F6C8E"], ["#0E1638", "#5B4FA6"], ["#08203A", "#2F80AA"], ["#0A1430", "#3F63BA"]];
+const LIGHT = "#DCE8FF", GOLD = "#F2C46D", ROSE = "#E8798B", NIGHT = "#040A17";
+function hash(s) { let h = 7; for (const c of s) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0; return h; }
+function rand(seed) { let x = seed || 1; return () => ((x = (Math.imul(x, 1103515245) + 12345) >>> 0) % 10000) / 10000; }
+function sparkle(x, y, s, fill) {
+  const q = s / 4;
+  return `<path d='M${x} ${y - s} L${x + q} ${y - q} L${x + s} ${y} L${x + q} ${y + q} L${x} ${y + s} L${x - q} ${y + q} L${x - s} ${y} L${x - q} ${y - q} Z' fill='${fill}'/>`;
+}
+function reel(cx, cy, r) {
+  let holes = "";
+  for (let k = 0; k < 5; k++) {
+    const a = (-90 + k * 72) * Math.PI / 180;
+    holes += `<circle cx='${(cx + r * 0.55 * Math.cos(a)).toFixed(1)}' cy='${(cy + r * 0.55 * Math.sin(a)).toFixed(1)}' r='${(r * 0.2).toFixed(1)}' fill='${NIGHT}'/>`;
+  }
+  return `<circle cx='${cx}' cy='${cy}' r='${r}' fill='#14284A' stroke='${LIGHT}' stroke-width='5'/>${holes}<circle cx='${cx}' cy='${cy}' r='${r * 0.14}' fill='${GOLD}'/>`;
+}
+function motif(genres, r) {
+  const has = (...g) => g.some((x) => genres.includes(x));
+  if (has("Sci-Fi"))
+    return `<circle cx='300' cy='100' r='44' fill='#7FA6E8'/><circle cx='288' cy='88' r='40' fill='#B9D0FA' opacity='.35'/>` +
+      `<ellipse cx='300' cy='104' rx='86' ry='15' fill='none' stroke='${GOLD}' stroke-width='5' transform='rotate(-14 300 104)'/>` + sparkle(110, 60, 8, LIGHT);
+  if (has("Animation", "Fantasy", "Family"))
+    return `<circle cx='300' cy='94' r='48' fill='${LIGHT}'/><circle cx='324' cy='78' r='44' fill='url(#sky)'/>` +
+      sparkle(232, 58, 10, GOLD) + sparkle(352, 150, 7, LIGHT) + sparkle(214, 140, 6, GOLD) + sparkle(120, 50, 6, LIGHT);
+  if (has("Romance", "Musical"))
+    return `<path d='M300 172 C 222 120 236 50 300 88 C 364 50 378 120 300 172 Z' fill='${ROSE}' opacity='.92'/>` +
+      sparkle(220, 64, 8, GOLD) + sparkle(380, 70, 6, LIGHT);
+  if (has("Thriller", "Crime", "Mystery")) {
+    let city = `<polygon points='328,0 372,0 300,210 214,210' fill='${LIGHT}' opacity='.10'/><circle cx='86' cy='54' r='18' fill='${LIGHT}' opacity='.9'/>`;
+    for (let x = 0; x < 400; ) {
+      const w = 26 + Math.round(r() * 34), h = 50 + Math.round(r() * 90);
+      city += `<rect x='${x}' y='${206 - h}' width='${w - 3}' height='${h}' fill='#071226'/>`;
+      for (let wy = 214 - h; wy < 196; wy += 14)
+        for (let wx = x + 5; wx < x + w - 9; wx += 10)
+          if (r() < 0.28) city += `<rect x='${wx}' y='${wy}' width='4' height='6' fill='${GOLD}' opacity='.85'/>`;
+      x += w;
+    }
+    return city;
+  }
+  if (has("Action"))
+    return `<polygon points='312,26 258,122 296,122 276,206 352,96 312,96 338,26' fill='${GOLD}'/>` + sparkle(200, 70, 7, LIGHT) + sparkle(380, 150, 5, LIGHT);
+  if (has("Adventure", "Sport", "Historical", "History"))
+    return `<circle cx='330' cy='62' r='24' fill='${GOLD}'/><polygon points='90,206 210,74 262,140 306,98 410,206' fill='#1B3768'/>` +
+      `<polygon points='210,74 190,98 204,94 216,106 232,92' fill='${LIGHT}'/><polygon points='306,98 292,114 304,112 318,112' fill='${LIGHT}'/>`;
+  if (has("Comedy"))
+    return `<circle cx='300' cy='102' r='52' fill='${GOLD}'/><circle cx='282' cy='90' r='6' fill='#1A2A4A'/><circle cx='318' cy='90' r='6' fill='#1A2A4A'/>` +
+      `<path d='M270 112 Q300 144 330 112' fill='none' stroke='#1A2A4A' stroke-width='6' stroke-linecap='round'/>` + sparkle(200, 60, 8, LIGHT) + sparkle(380, 160, 6, LIGHT);
+  let strip = `<g transform='rotate(-8 200 172)'><rect x='60' y='156' width='240' height='34' fill='${NIGHT}'/>`;
+  for (let x = 66; x < 296; x += 16) strip += `<rect x='${x}' y='160' width='8' height='6' rx='1' fill='${LIGHT}' opacity='.7'/><rect x='${x}' y='180' width='8' height='6' rx='1' fill='${LIGHT}' opacity='.7'/>`;
+  return strip + `</g>` + reel(306, 96, 54) + sparkle(160, 56, 8, GOLD);
+}
+function posterArt(m) {
+  const h = hash(m.title), [a, b] = SKIES[h % SKIES.length], r = rand(h);
+  let stars = "";
+  for (let i = 0; i < 26; i++)
+    stars += `<circle cx='${(r() * 400).toFixed(1)}' cy='${(r() * 150).toFixed(1)}' r='${(r() * 1.3 + 0.3).toFixed(2)}' fill='#FFFFFF' opacity='${(r() * 0.6 + 0.25).toFixed(2)}'/>`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 240' preserveAspectRatio='xMidYMid slice'>` +
+    `<defs><linearGradient id='sky' gradientUnits='userSpaceOnUse' x1='0' y1='0' x2='0' y2='240'><stop offset='0' stop-color='${a}'/><stop offset='1' stop-color='${b}'/></linearGradient>` +
+    `<radialGradient id='glow' cx='.75' cy='.4' r='.55'><stop offset='0' stop-color='#8AB8FF' stop-opacity='.35'/><stop offset='1' stop-color='#8AB8FF' stop-opacity='0'/></radialGradient></defs>` +
+    `<rect width='400' height='240' fill='url(#sky)'/><rect width='400' height='240' fill='url(#glow)'/>${stars}${motif(m.genres, r)}` +
+    `<path d='M0 206 Q 110 184 210 204 T 400 198 V 240 H 0 Z' fill='${NIGHT}' opacity='.85'/></svg>`;
+  return `url('data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, "%27")}')`;
+}
+
+/* Cinema hall banner: glowing screen, curtains and rows of seats */
+let bannerCount = 0;
+function hallArt(caption) {
+  const id = "hall" + bannerCount++;
+  const r = rand(hash(caption));
+  let seats = "";
+  [{ y: 226, w: 64, h: 44, c: "#0C1934" }, { y: 256, w: 74, h: 48, c: "#091329" }, { y: 288, w: 86, h: 52, c: "#050C1D" }].forEach((row, ri) => {
+    for (let x = ri % 2 ? -row.w / 2 : 0; x < 1200; x += row.w) {
+      if (r() < 0.45) seats += `<circle cx='${x + row.w / 2}' cy='${row.y - row.w * 0.1}' r='${row.w * 0.19}' fill='${row.c}'/>`;
+      seats += `<rect x='${x + 4}' y='${row.y}' width='${row.w - 8}' height='${row.h}' rx='14' fill='${row.c}'/>`;
+    }
+  });
+  return `<svg viewBox='0 0 1200 320' preserveAspectRatio='xMidYMid slice' role='img' aria-label='Illustration of a cinema hall with a glowing screen'>
+    <defs>
+      <linearGradient id='${id}w' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#0D1B36'/><stop offset='1' stop-color='#060C1A'/></linearGradient>
+      <linearGradient id='${id}s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#E4EDFF'/><stop offset='1' stop-color='#7C9EE2'/></linearGradient>
+      <radialGradient id='${id}h' cx='.5' cy='.35' r='.6'><stop offset='0' stop-color='#8AB8FF' stop-opacity='.45'/><stop offset='1' stop-color='#8AB8FF' stop-opacity='0'/></radialGradient>
+    </defs>
+    <rect width='1200' height='320' fill='url(#${id}w)'/>
+    <ellipse cx='600' cy='110' rx='560' ry='190' fill='url(#${id}h)'/>
+    <path d='M0 0 H262 Q 236 130 252 320 H0 Z' fill='#132A52'/><path d='M60 0 Q 50 160 64 320 M130 0 Q 118 160 134 320 M196 0 Q 184 160 198 320' stroke='#0B1A38' stroke-width='10' fill='none'/>
+    <path d='M1200 0 H938 Q 964 130 948 320 H1200 Z' fill='#132A52'/><path d='M1140 0 Q 1150 160 1136 320 M1070 0 Q 1082 160 1066 320 M1004 0 Q 1016 160 1002 320' stroke='#0B1A38' stroke-width='10' fill='none'/>
+    <rect x='300' y='36' width='600' height='154' rx='8' fill='url(#${id}s)'/>
+    <text x='600' y='130' text-anchor='middle' font-family='Big Shoulders Display, Arial Narrow, Impact, sans-serif' font-weight='800' font-size='58' letter-spacing='3' fill='#0B1A33'${caption.length * 34 > 520 ? " textLength='520' lengthAdjust='spacingAndGlyphs'" : ""}>${esc(caption.toUpperCase())}</text>
+    <polygon points='560,330 640,330 900,190 300,190' fill='#CFE0FF' opacity='.05'/>
+    ${seats}
+  </svg>`;
+}
+
+/* ---------- storage (safe: works even if the browser blocks it) ---------- */
+const store = {
+  get(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} },
+};
+let feedback = store.get("cinematch-feedback", []);
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => (t.hidden = true), 2200);
+}
+
+/* ---------- ticket card ---------- */
+const artCache = new Map();
+function card(m, opts = {}) {
+  if (!artCache.has(m.title)) artCache.set(m.title, posterArt(m));
+  const posterStyle = m.poster
+    ? `background-image:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.6)),url('${esc(m.poster)}')`
+    : `background-image:${artCache.get(m.title)}`;
+  const stamp = opts.match != null ? `<span class="stamp">MATCH ${Math.round(opts.match * 100)}%</span>` : "";
+  const chips = opts.reasons?.length
+    ? opts.reasons.map((r) => `<span class="chip why">✓ ${esc(r)}</span>`).join("")
+    : m.genres.slice(0, 3).map((g) => `<span class="chip">${esc(g)}</span>`).join("");
+  const vote = opts.seed ? voteButtons(opts.seed, m.title) : "";
+  return `<article class="ticket">
+    <div class="poster" style="${posterStyle}" role="img" aria-label="${esc(m.poster ? "Poster for " + m.title : "Artwork for " + m.title)}">${stamp}</div>
+    <div class="tear" aria-hidden="true"></div>
+    <div class="ticket-body">
+      <h3>${esc(m.title)}</h3>
+      <div class="meta"><span class="star">★ ${m.rating.toFixed(1)}/10</span><span>${m.year || "—"}</span><span>${esc(m.language)}</span>${m.runtime ? `<span>${m.runtime} min</span>` : ""}</div>
+      <p class="overview">${esc(m.overview)}</p>
+      <div class="meta"><span>Dir. ${esc(m.director.join(", ") || "Unknown")}</span></div>
+      <div class="chips">${chips}</div>
+      ${vote}
+    </div>
+  </article>`;
+}
+
+function voteButtons(seed, title) {
+  const prev = [...feedback].reverse().find((f) => f.searched_for === seed && f.recommended === title);
+  const v = prev ? prev.helpful : null;
+  return `<div class="vote" data-seed="${esc(seed)}" data-title="${esc(title)}">
+    <button type="button" class="up" aria-pressed="${v === "yes"}">👍 Good pick</button>
+    <button type="button" class="down" aria-pressed="${v === "no"}">👎 Not for me</button></div>`;
+}
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".vote button");
+  if (!btn) return;
+  const box = btn.parentElement;
+  const helpful = btn.classList.contains("up") ? "yes" : "no";
+  feedback.push({ timestamp: new Date().toISOString().slice(0, 19).replace("T", " "), searched_for: box.dataset.seed, recommended: box.dataset.title, helpful });
+  store.set("cinematch-feedback", feedback);
+  box.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+  toast(helpful === "yes" ? "Saved. Thanks for the feedback!" : "Saved. We'll use this to improve.");
+  renderFeedback();
+});
+
+/* ---------- reasons ---------- */
+function shared(a, b) { return a.filter((x) => b.includes(x)); }
+function reasons(seed, m) {
+  const r = [];
+  const g = shared(seed.genres, m.genres); if (g.length) r.push(g.join(", "));
+  const md = shared(seed.mood, m.mood); if (md.length) r.push(md.join(", "));
+  const d = shared(seed.director, m.director); if (d.length) r.push("Dir. " + d.join(", "));
+  const c = shared(seed.cast, m.cast); if (c.length) r.push("Stars " + c.join(", "));
+  if (seed.language && seed.language === m.language) r.push(m.language);
+  return r.slice(0, 4);
+}
+
+/* ---------- DISCOVER ---------- */
+function setupDiscover() {
+  const cfg = DATA.settings.display || {};
+  const sorted = M.map((m, i) => [m.title, i]).sort((a, b) => a[0].localeCompare(b[0]));
+  $("seed").innerHTML = sorted.map(([t, i]) => `<option value="${i}">${esc(t)}</option>`).join("");
+  const start = M.findIndex((m) => m.title === "3 Idiots");
+  $("seed").value = String(start >= 0 ? start : sorted[0][1]);
+  $("minRating").innerHTML = [0, 5, 6, 7, 7.5, 8, 8.5].map((v) => `<option value="${v}">${v ? v.toFixed(1) + "+" : "Any"}</option>`).join("");
+  $("minRating").value = String(cfg.min_rating_default ?? 6);
+  if (!$("minRating").value) $("minRating").value = "0";
+  $("count").value = String(cfg.default_results ?? 6);
+  if (!$("count").value) $("count").value = "6";
+  ["seed", "minRating", "count", "anyLang"].forEach((id) => $(id).addEventListener("change", renderDiscover));
+  $("heroEyebrow").textContent = S.site.subject;
+  $("heroLede").textContent = S.site.tagline;
+  const years = M.map((m) => m.year).filter(Boolean);
+  $("stats").innerHTML = `<span><b>${M.length}</b> films</span><span><b>${allLangs.length}</b> languages</span><span><b>${allGenres.length}</b> genres</span><span><b>${Math.min(...years)}–${Math.max(...years)}</b></span><span>Engine: <b>${esc(DATA.engine)}</b></span>`;
+}
+
+function renderDiscover() {
+  const i = Number($("seed").value);
+  const seed = M[i];
+  const matrix = $("anyLang").checked ? DATA.simNoLang : DATA.sim;
+  const min = Number($("minRating").value);
+  const n = Number($("count").value);
+  const ranked = M.map((m, j) => ({ m, j, s: matrix[i][j] }))
+    .filter((x) => x.j !== i && x.m.rating >= min)
+    .sort((a, b) => b.s - a.s || b.m.rating - a.m.rating)
+    .slice(0, n);
+  $("recTitle").textContent = `Because you liked ${seed.title}`;
+  $("recGrid").innerHTML = ranked.length
+    ? ranked.map((x) => card(x.m, { match: x.s, reasons: reasons(seed, x.m), seed: seed.title })).join("")
+    : `<div class="empty">No films match. Lower the minimum rating to see more.</div>`;
+}
+
+/* ---------- MOOD FINDER ---------- */
+const picked = { mood: new Set(), genre: new Set(), lang: new Set() };
+function pills(el, values, set) {
+  el.innerHTML = values.map((v) => `<button type="button" class="pill" aria-pressed="${set.has(v)}" data-v="${esc(v)}">${esc(v)}</button>`).join("");
+  el.onclick = (e) => {
+    const b = e.target.closest(".pill"); if (!b) return;
+    const v = b.dataset.v; set.has(v) ? set.delete(v) : set.add(v);
+    b.setAttribute("aria-pressed", String(set.has(v)));
+    renderMoods();
+  };
+}
+function setupMoods() {
+  picked.mood.add(allMoods.includes("Feel-good") ? "Feel-good" : allMoods[0]);
+  pills($("pillMood"), allMoods, picked.mood);
+  pills($("pillGenre"), allGenres, picked.genre);
+  pills($("pillLang"), allLangs, picked.lang);
+  $("moodClear").onclick = () => { Object.values(picked).forEach((s) => s.clear()); setupMoodPills(); renderMoods(); };
+}
+function setupMoodPills() {
+  pills($("pillMood"), allMoods, picked.mood); pills($("pillGenre"), allGenres, picked.genre); pills($("pillLang"), allLangs, picked.lang);
+}
+function renderMoods() {
+  const total = picked.mood.size + picked.genre.size + picked.lang.size;
+  if (!total) { $("moodTitle").textContent = "Your picks"; $("moodGrid").innerHTML = `<div class="empty">Tap at least one mood, genre or language above.</div>`; return; }
+  const scored = M.map((m) => {
+    const why = [...m.mood.filter((x) => picked.mood.has(x)), ...m.genres.filter((x) => picked.genre.has(x)), ...(picked.lang.has(m.language) ? [m.language] : [])];
+    const langOk = !picked.lang.size || picked.lang.has(m.language);
+    return { m, why, score: why.length, langOk };
+  }).filter((x) => x.score > 0 && x.langOk).sort((a, b) => b.score - a.score || b.m.rating - a.m.rating).slice(0, 12);
+  $("moodTitle").textContent = `${scored.length} picks for you`;
+  $("moodGrid").innerHTML = scored.length ? scored.map((x) => card(x.m, { reasons: x.why })).join("") : `<div class="empty">Nothing matches every choice. Remove a language or genre.</div>`;
+}
+
+/* ---------- LIBRARY ---------- */
+function setupLibrary() {
+  $("fGenre").innerHTML = `<option value="">All genres</option>` + allGenres.map((g) => `<option>${esc(g)}</option>`).join("");
+  $("fLang").innerHTML = `<option value="">All languages</option>` + allLangs.map((g) => `<option>${esc(g)}</option>`).join("");
+  $("fFamily").innerHTML = `<option value="">All families</option>` + DATA.families.map((f) => `<option value="${f.id}">${esc(f.name)}</option>`).join("");
+  ["q", "fGenre", "fLang", "fFamily", "fSort"].forEach((id) => $(id).addEventListener("input", renderLibrary));
+}
+function renderLibrary() {
+  const q = $("q").value.trim().toLowerCase();
+  const g = $("fGenre").value, l = $("fLang").value, f = $("fFamily").value, sort = $("fSort").value;
+  let list = M.filter((m) => (!q || [m.title, ...m.director, ...m.cast].join(" ").toLowerCase().includes(q))
+    && (!g || m.genres.includes(g)) && (!l || m.language === l) && (f === "" || String(m.family) === f));
+  const cmp = { rating: (a, b) => b.rating - a.rating, new: (a, b) => b.year - a.year, old: (a, b) => a.year - b.year, az: (a, b) => a.title.localeCompare(b.title) }[sort];
+  list = [...list].sort(cmp);
+  $("libCount").textContent = `Showing ${list.length} of ${M.length} films`;
+  $("libGrid").innerHTML = list.length ? list.map((m) => card(m)).join("") : `<div class="empty">No films found. Try a different search.</div>`;
+}
+
+/* ---------- INSIGHTS ---------- */
+function bars(el, entries, fmt = (v) => v) {
+  const max = Math.max(...entries.map((e) => e[1]), 1);
+  el.innerHTML = entries.map(([k, v]) => `<div class="bar-row"><span title="${esc(k)}">${esc(k)}</span><div class="bar-track"><div class="bar-fill" style="width:${(v / max) * 100}%"></div></div><span class="mono">${fmt(v)}</span></div>`).join("");
+}
+function countBy(list) { const c = {}; list.forEach((x) => (c[x] = (c[x] || 0) + 1)); return Object.entries(c).sort((a, b) => b[1] - a[1]); }
+
+function setupInsights() {
+  $("engineLine").textContent = `Built ${DATA.builtAt} with ${DATA.engine}. ${M.length} films, ${DATA.featureCount} features, ${(M.length * (M.length - 1)) / 2} film pairs compared.`;
+  const w = DATA.settings.weights || {};
+  bars($("weightBars"), Object.entries(w), (v) => Number(v).toFixed(1));
+  bars($("chartGenre"), countBy(M.flatMap((m) => m.genres)));
+  bars($("chartLang"), countBy(M.map((m) => m.language)));
+  bars($("chartDecade"), countBy(M.filter((m) => m.year).map((m) => Math.floor(m.year / 10) * 10 + "s")).sort((a, b) => a[0].localeCompare(b[0])));
+  const avg = allLangs.map((l) => { const r = M.filter((m) => m.language === l).map((m) => m.rating); return [l, r.reduce((a, b) => a + b, 0) / r.length]; }).sort((a, b) => b[1] - a[1]);
+  bars($("chartAvg"), avg, (v) => v.toFixed(1));
+
+  const sets = [["top", "10 highest-rated films"], ...DATA.families.map((f) => ["f" + f.id, `Family: ${f.name}`])];
+  $("heatSet").innerHTML = sets.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("");
+  $("heatSet").addEventListener("change", renderHeat);
+  renderHeat();
+
+  $("families").innerHTML = DATA.families.map((f) => {
+    const members = M.filter((m) => m.family === f.id).sort((a, b) => b.rating - a.rating);
+    return `<div class="family"><h3>${esc(f.name)}</h3><span class="count">${f.size} ${f.size === 1 ? "film" : "films"}</span>
+      <div class="chips">${members.slice(0, 6).map((m) => `<span class="chip">${esc(m.title)}</span>`).join("")}</div>
+      <button type="button" class="link" data-family="${f.id}">${f.size === 1 ? "See it" : "See all " + f.size} in the library →</button></div>`;
+  }).join("");
+  $("families").onclick = (e) => {
+    const b = e.target.closest("[data-family]"); if (!b) return;
+    $("fFamily").value = b.dataset.family; renderLibrary(); location.hash = "library";
+  };
+  renderFeedback();
+}
+
+function renderHeat() {
+  const v = $("heatSet").value;
+  let idx = v === "top" ? M.map((m, i) => i).sort((a, b) => M[b].rating - M[a].rating).slice(0, 10)
+    : M.map((m, i) => i).filter((i) => "f" + M[i].family === v).slice(0, 12);
+  const n = idx.length;
+  let html = `<div></div>` + idx.map((i) => `<div class="collabel" title="${esc(M[i].title)}">${esc(M[i].title)}</div>`).join("");
+  idx.forEach((i) => {
+    html += `<div class="rowlabel" title="${esc(M[i].title)}">${esc(M[i].title)}</div>`;
+    idx.forEach((j) => {
+      const s = DATA.sim[i][j];
+      const pct = Math.round(s * 100);
+      html += `<div class="cell" style="background:color-mix(in oklab, var(--accent) ${Math.round(s * 92) + 4}%, var(--surface-2))" title="${esc(M[i].title)} ↔ ${esc(M[j].title)}: ${pct}% similar">${pct}</div>`;
+    });
+  });
+  const heat = $("heat");
+  heat.style.gridTemplateColumns = `150px repeat(${n}, minmax(34px, 54px))`;
+  heat.innerHTML = html;
+}
+
+function renderFeedback() {
+  const p = $("feedbackPanel");
+  if (!feedback.length) { p.innerHTML = `<p class="muted">No votes yet. Ask testers to use the 👍 / 👎 buttons on the Discover page.</p>`; return; }
+  const yes = feedback.filter((f) => f.helpful === "yes").length;
+  const csv = ["timestamp,searched_for,recommended,helpful", ...feedback.map((f) => [f.timestamp, f.searched_for, f.recommended, f.helpful].map((x) => `"${String(x).replace(/"/g, '""')}"`).join(","))].join("\n");
+  p.innerHTML = `<div class="stats" style="font-size:.9rem"><span><b>${feedback.length}</b> votes</span><span><b>${Math.round((yes / feedback.length) * 100)}%</b> said good pick</span><span><b>${new Set(feedback.map((f) => f.searched_for)).size}</b> films searched</span></div>
+    <div class="scroll"><table><thead><tr><th>Time</th><th>Searched for</th><th>Recommended</th><th>Vote</th></tr></thead><tbody>
+    ${[...feedback].reverse().slice(0, 15).map((f) => `<tr><td class="mono">${esc(f.timestamp)}</td><td>${esc(f.searched_for)}</td><td>${esc(f.recommended)}</td><td>${f.helpful === "yes" ? "👍" : "👎"}</td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="row"><button class="btn" type="button" id="copyCsv">Copy votes as CSV</button><button class="btn ghost" type="button" id="clearVotes">Clear votes</button></div>
+    <textarea class="out" id="csvOut" readonly hidden></textarea>`;
+  $("copyCsv").onclick = async () => {
+    const out = $("csvOut"); out.value = csv;
+    try { await navigator.clipboard.writeText(csv); toast("Copied. Paste into Excel or Google Sheets."); }
+    catch { out.hidden = false; out.select(); toast("Select all and copy the text below."); }
+  };
+  $("clearVotes").onclick = (e) => {
+    if (e.target.dataset.sure) { feedback = []; store.set("cinematch-feedback", feedback); renderFeedback(); renderDiscover(); toast("Votes cleared."); }
+    else { e.target.dataset.sure = "1"; e.target.textContent = "Click again to clear"; }
+  };
+}
+
+/* ---------- ABOUT ---------- */
+function setupAbout() {
+  const p = S.project || {};
+  const list = (id, arr) => ($(id).innerHTML = (arr || []).map((x) => `<li>${esc(x)}</li>`).join(""));
+  $("aboutEyebrow").textContent = "About the project";
+  $("aboutTitle").textContent = `Why we built ${S.site.name}`;
+  $("aboutProblem").textContent = (p.problem_statement || "").trim();
+  $("aboutHmw").textContent = (p.how_might_we || "").trim();
+  $("aboutAi").innerHTML = esc((p.ai_used || "").trim()).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  $("aboutData").textContent = (p.data_used || "").trim();
+  $("aboutEthics").textContent = (p.ethics || "").trim();
+  list("aboutUsers", p.users); list("aboutObjectives", p.objectives); list("aboutFuture", p.future_scope);
+  $("aboutSdgs").innerHTML = (p.sdgs || []).map((s) => { const [h, ...rest] = s.split(":"); return `<div class="sdg"><b>${esc(h.split("—")[0].trim())}</b><span class="muted">${esc((h.split("—")[1] || "").trim())}</span><p>${esc(rest.join(":").trim())}</p></div>`; }).join("");
+  $("aboutTeam").innerHTML = (S.team || []).map((t) => `<div class="member"><b>${esc(t.name)}</b><span class="muted">${esc(t.role)}</span></div>`).join("");
+  $("aboutFaq").innerHTML = (S.faq || []).map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("");
+  $("footer").innerHTML = [S.site.name, S.site.subject, S.site.school, S.site.academic_year, `Updated ${DATA.builtAt}`].map((x) => `<span>${esc(x)}</span>`).join("");
+  $("brandName").textContent = S.site.name;
+  document.title = S.site.name;
+}
+
+/* ---------- navigation ---------- */
+const VIEWS = ["discover", "moods", "library", "insights", "about"];
+function route() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "discover";
+  VIEWS.forEach((x) => ($("view-" + x).hidden = x !== v));
+  document.querySelectorAll("nav a").forEach((a) => (a.dataset.view === v ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+
+$("moodBanner").innerHTML = hallArt("What's your mood?");
+$("libBanner").innerHTML = hallArt("Now showing");
+$("aboutBanner").innerHTML = hallArt(S.site.name);
+setupDiscover(); setupMoods(); setupLibrary(); setupInsights(); setupAbout();
+renderDiscover(); renderMoods(); renderLibrary(); route();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,121 @@
+# =====================================================================
+#  SITE CONTENT FILE  (for the Information Researcher & whole team)
+# ---------------------------------------------------------------------
+#  Edit the text between the quotes. Save the file and refresh the
+#  website — your changes appear instantly. No coding needed.
+#
+#  Rules:
+#   • Keep the quotes "  " around text.
+#   • Text inside """ triple quotes """ can span many lines.
+#   • Don't rename the words before the = sign.
+# =====================================================================
+
+[site]
+name = "CineMatch"
+tagline = "Tell us one movie you loved. We'll find your next favourite."
+school = "Your School Name, City"
+academic_year = "2026–27"
+subject = "Artificial Intelligence (843) — Class XII Practical Project"
+
+# ---------------------------------------------------------------------
+#  PROJECT DETAILS (follows the CBSE AI Projects Cookbook template)
+# ---------------------------------------------------------------------
+[project]
+problem_statement = """
+With thousands of films released across many languages every year, viewers —
+especially students with limited free time — spend more time scrolling than
+watching. Generic "top 10" lists ignore personal taste, and good regional
+films often go unnoticed.
+"""
+
+# Fill in the cookbook's one-line format:
+# "How can we help ___ find a way to ___ so that they can ___?"
+how_might_we = """
+How can we help students and families find films that match their taste
+so that they spend less time searching and discover more good cinema,
+including films in other Indian languages?
+"""
+
+users = [
+  "Students looking for something to watch after exams",
+  "Families choosing a film everyone will enjoy",
+  "Movie lovers wanting to explore regional and world cinema",
+]
+
+objectives = [
+  "Recommend similar movies from a single movie the user likes",
+  "Let users filter by genre, language, mood and rating",
+  "Explain WHY each movie was recommended (transparent AI)",
+  "Collect user feedback to improve the recommendations",
+]
+
+ai_used = """
+Content-based filtering. Every movie is turned into a list of numbers
+(features) built from its genres, mood, language, director and cast.
+Using the Orange Data Mining library, we compute the **cosine similarity**
+between movies — the closer two movies are in this feature space, the more
+alike they are. This is a type of unsupervised machine learning.
+"""
+
+data_used = """
+A hand-curated dataset of movies (data/movies.csv) with title, year,
+genres, director, lead cast, language, rating, runtime, mood and a short
+summary. Ratings are approximate public audience ratings.
+"""
+
+sdgs = [
+  "SDG 4 — Quality Education: teaches how recommender systems work and promotes media literacy.",
+  "SDG 10 — Reduced Inequalities: gives regional-language cinema equal visibility next to big releases.",
+  "SDG 3 — Good Health & Well-being: mood-based picks encourage healthy, intentional screen time.",
+]
+
+future_scope = [
+  "Collaborative filtering using ratings from many users",
+  "Summary-text similarity using natural language processing",
+  "Mobile app version and voice search",
+  "Links to legal streaming platforms where each film is available",
+]
+
+ethics = """
+We do not collect any personal information. Feedback is stored anonymously.
+We avoid bias by including films from many languages and eras, and we show
+users why a movie was recommended so the AI is not a "black box".
+"""
+
+# ---------------------------------------------------------------------
+#  TEAM  (add or remove [[team]] blocks as needed)
+# ---------------------------------------------------------------------
+[[team]]
+name = "Member Name"
+role = "Project Leader"
+
+[[team]]
+name = "Member Name"
+role = "Data Expert"
+
+[[team]]
+name = "Member Name"
+role = "Information Researcher"
+
+[[team]]
+name = "Member Name"
+role = "Designer & Prototype Builder"
+
+[[team]]
+name = "Member Name"
+role = "Tester"
+
+# ---------------------------------------------------------------------
+#  FAQ shown on the About page
+# ---------------------------------------------------------------------
+[[faq]]
+q = "How does CineMatch decide what to recommend?"
+a = "It compares the features of every movie (genre, mood, language, director, cast) and picks the ones most similar to the movie you chose."
+
+[[faq]]
+q = "Why didn't I get a movie from a different language?"
+a = "Language is one of the features. Turn on 'Ignore language' on the Recommend page to get picks from any language."
+
+[[faq]]
+q = "Can I add more movies?"
+a = "Yes — the data expert adds a new row to data/movies.csv and the recommender learns it automatically."
