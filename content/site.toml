@@ -86,23 +86,24 @@ users why a movie was recommended so the AI is not a "black box".
 #  TEAM  (add or remove [[team]] blocks as needed)
 # ---------------------------------------------------------------------
 [[team]]
-name = "Member Name"
+name = "Diyashree Manna"
 role = "Project Leader"
 
 [[team]]
-name = "Member Name"
+name = "Diyashree Manna and Alex D'Rozario"
 role = "Data Expert"
 
 [[team]]
-name = "Member Name"
+name = "Diyashree Manna , Asmit Sen and Rubi Nasrin"
 role = "Information Researcher"
 
 [[team]]
-name = "Member Name"
+name = "Designer - Rajeshri Lakra and Asmit Sen 
+        Prototype Builder - Rajeshri Lakra and Rubi Nasrin "
 role = "Designer & Prototype Builder"
 
 [[team]]
-name = "Member Name"
+name = "Diyashree Manna, Asmit Sen, Rajeshri Lakra, Alex D'Rozario and Rubi Nasrin"
 role = "Tester"
 
 # ---------------------------------------------------------------------
