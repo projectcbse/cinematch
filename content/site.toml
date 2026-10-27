@@ -94,13 +94,16 @@ name = "Diyashree Manna and Alex D'Rozario"
 role = "Data Expert"
 
 [[team]]
-name = "Diyashree Manna , Asmit Sen and Rubi Nasrin"
+name = "Diyashree Manna, Asmit Sen and Rubi Nasrin"
 role = "Information Researcher"
 
 [[team]]
-name = "Designer - Rajeshri Lakra and Asmit Sen 
-        Prototype Builder - Rajeshri Lakra and Rubi Nasrin "
-role = "Designer & Prototype Builder"
+name = "Rajeshri Lakra and Ashmit Sen"
+role = "Designer"
+
+[[team]]
+name = "Rajeshri Lakra and Rubi Nasrin"
+role = "Prototype Builder"
 
 [[team]]
 name = "Diyashree Manna, Asmit Sen, Rajeshri Lakra, Alex D'Rozario and Rubi Nasrin"
